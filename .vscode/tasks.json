@@ -7,9 +7,10 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                "-I", "C:\\Trading_Bot\\include",
-                "C:\\Trading_Bot\\src\\EquitySnapshot.cpp", "C:\\Trading_Bot\\src\\HistoricalEquityData.cpp", 
-                "C:\\Trading_Bot\\src\\Equity.cpp", "C:\\Trading_Bot\\src\\Portfolio.cpp",
+                "-I", "${workspaceFolder}\\include",
+                "${workspaceFolder}\\src\\DateTime.cpp",
+                "${workspaceFolder}\\src\\EquitySnapshot.cpp", "${workspaceFolder}\\src\\HistoricalEquityData.cpp", 
+                "${workspaceFolder}\\src\\LiveEquity.cpp", "${workspaceFolder}\\src\\Portfolio.cpp",
                 "${file}",
                 "-o",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe"

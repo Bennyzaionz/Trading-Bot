@@ -1,49 +1,97 @@
+/**
+ * @file    EquitySnapshot.cpp
+ * @brief   Defines the EquitySnapshot class functionality.
+ *
+ * This file contains the constructor for the EquitySnapshot class. 
+ * It also defines a printing function which can be used to easily 
+ * visualize and debug. It is used by the AlgoTrading system for both
+ * backtesting and live trading data processing.
+ *
+ * @author  Benny Zaionz
+ * @date    2025-06-18
+ * @version 1.0
+ */
+
 #include "EquitySnapshot.h"
 
-#include <string>
 #include <iostream>
 
 namespace AlgoTrading
 {
 
 /*---------- CONSTRUCTOR ----------*/
-EquitySnapshot::EquitySnapshot
-(
-    const std::string datetime_,
-    double open_,
-    double close_,
-    double low_,
-    double high_,
-    double avg_bid_,
-    double avg_ask_,
-    double min_bid_,
-    double max_ask_,
-    int volume_
-):
-    datetime(datetime_),
-    open(open_),
-    close(close_),
-    low(low_),
-    high(high_),
-    avg_bid(avg_bid_),
-    avg_ask(avg_ask_),
-    min_bid(min_bid_),
-    max_ask(max_ask_),
-    volume(volume_) {} 
+
+EquitySnapshot::EquitySnapshot():
+dt(DateTime()), last(-1), low(-1), high(-1), bid(-1), ask(-1), volume(0) {} 
+
+
+EquitySnapshot::EquitySnapshot(const std::string& datetime_,
+                               const double last_,
+                               const double low_,
+                               const double high_,
+                               const double bid_,
+                               const double ask_,
+                               int volume_):
+dt(DateTime(datetime_)), last(last_), low(low_), high(high_), bid(bid_), ask(ask_), volume(volume_) {} 
+
+EquitySnapshot::EquitySnapshot(const DateTime& datetime_,
+                               const double last_,
+                               const double low_,
+                               const double high_,
+                               const double bid_,
+                               const double ask_,
+                               int volume_):
+dt(datetime_), last(last_), low(low_), high(high_), bid(bid_), ask(ask_), volume(volume_) {} 
+
+/*---------- GETTERS ----------*/
+
+double EquitySnapshot::getPrice(const int price_type) const
+{
+    if( price_type == LAST )
+        return getLast();
+    else if( price_type == LOW)
+        return getLow();
+    else if( price_type == HIGH )
+        return getHigh();
+    else if( price_type == BID )
+        return getBid();
+    else if( price_type == ASK )
+        return getAsk();
+    
+    return -1;
+}
 
 /*---------- PRINTING HELPERS ----------*/
 
-void EquitySnapshot::print(const std::string print_type)
+void EquitySnapshot::print(const int print_type) const
 {
-    if ( print_type == "OHLC" )
-        std::cout << "Datetime: " << datetime << ", Open: " << open << ", Close: " << close << ", Low: " << low << ", High:" << high << std::endl;
-    else if ( print_type == "OHLC/V")
-        std::cout << "Datetime: " << datetime<< ", Open: " << open << ", Close: " << close << ", Low: " << low << ", High:" << high << ", Volume: " << volume << std::endl;
-    else if ( print_type == "BID-ASK")
-        std::cout << "Datetime: " << datetime<< ", Avg Bid: " << avg_bid << ", Avg Ask: " << avg_ask << ", Min Bid: " << min_bid << ", Max Ask:" << max_ask << std::endl;
 
+    // std::cout << "---------- EquitySnapshot ----------" << std::endl;
+
+    if ( print_type == TRADE )
+    {
+
+        std::cout << "Datetime: " << getDatetime().toString() 
+                  << ", Last: " << getLast() 
+                  << ", Low: " << getLow() 
+                  << ", High:" << getHigh() 
+                  << ", Volume: " << getVolume(); // << std::endl;
+    }
+
+    else if ( print_type == BID_ASK)
+    {
+
+        std::cout << "Datetime: " << getDatetime().toString()
+                  << ", Bid: " << getBid() 
+                  << ", Ask: " << getAsk();  
+                  //<< std::endl;
+    
+}
     else
         std::cout << "Print Type " << print_type << " does not exist" << std::endl;
+
+    // std::cout << "------------------------------------" << std::endl;
+
 }
 
 } // namespace

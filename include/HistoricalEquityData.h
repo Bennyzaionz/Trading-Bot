@@ -8,12 +8,16 @@ It contains a vector of MarketSnapshots defined in Market_Snapshot.h
 
 #include <string>
 #include <vector>
-#include <iostream>
 
 #include "EquitySnapshot.h"
+#include "LiveEquity.h"
 
 namespace AlgoTrading
 {
+
+enum StepSizeUnit{ SECS, MINS, HOURS, DAYS, WEEKS, MONTHS };
+
+const int NOT_CONTAINED = -1;
 
 class HistoricalEquityData
 {
@@ -21,60 +25,52 @@ class HistoricalEquityData
 
         const std::string ticker;
         std::vector<EquitySnapshot> data;
-        const std::string timescale_unit;
-        const int timescale_length;
+        const int step_unit; // enum
+        const int step_length;
+
+        /*---------- SETTERS ----------*/
+
+        void setData(std::vector<EquitySnapshot> ms) { data = ms; }
+
+        /*---------- DATETIME HANDLER ----------*/
+
+        int countDate(const DateTime& datetime_) const; // returns the number of times a date is present in list of datetimes
+        DateTime datetimeHandler(const DateTime& datetime_) const;
 
     public:
 
-    HistoricalEquityData
-    (
-        const std::string ticker_ = "",
-        const std::string timescale_unit_ = "D", 
-        const int timescale_length_ = 1
-    );
-
-    HistoricalEquityData
-    (
-        const std::string ticker_ = "",
-        const std::vector<EquitySnapshot>& vector_data = {}, 
-        const std::string timescale_unit_ = "D", 
-        const int timescale_length_ = 1
-    );
+    HistoricalEquityData(const std::string& ticker_,
+                         const int step_unit_ = DAYS, 
+                         const int step_length_ = 1);
 
     /*---------- GETTERS ----------*/
 
     std::string getTicker() const { return ticker; }
+
     std::vector<EquitySnapshot> getData() const { return data; }
-    std::string getTimescaleUnit() const { return timescale_unit; }
-    int getTimescaleLength() const { return timescale_length; }
+    std::vector<DateTime> getDatetimes() const;
+    std::vector<double> getHistoricalPrices(const int price_type) const;
+    std::vector<int> getHistoricalVolume() const;
 
-    /*---------- SETTERS ----------*/
-
-    void setData(std::vector<EquitySnapshot> ms) { data = ms; }
+    int getStepUnit() const { return step_unit; }
+    int getStepLength() const { return step_length; }
+    int getSize() const { return data.size(); } // returns the size of the data vector (number of Equity snapshots)
+    EquitySnapshot getSnapshotAt(std::string& datetime_) const;
 
     /*---------- APPENDING DATA ----------*/
 
-    void append_data(const EquitySnapshot ms) { data.push_back(ms); } // append using EquitySnapshot item
+    void append_data(const EquitySnapshot& eq); // { data.push_back(eq); }
+    void append_data(const LiveEquity& leq); // { data.push_back(leq.getCurrentSnapshot()); }
+
     
-    void append_data( const std::string datetime_ = "", 
-                     double open_ = -1, double close_ = -1, double low_ = -1, double high_ = -1,
-                     double avg_bid_ = -1, double avg_ask_ = -1, double min_bid_ = -1, double max_ask_ = -1,
-                     int volume_ = 0) // append using raw data
-    {
-        EquitySnapshot ms(datetime_, open_, close_, low_, high_, avg_bid_, avg_ask_, min_bid_, max_ask_, volume_);
-        data.push_back(ms);
-    }
-
-    /*---------- SIZE ----------*/
-
-    int getSize() { return data.size(); } // returns the size of the data vector (number of Equity snapshots)
-
     /*---------- PRINT HELPER ----------*/
     
-    void print(const std::string print_type);
+    void print(const int print_type = BID_ASK) const;
 
-    // MarketSnapshot get_MarketSnapshot_from(std::str datetime)
+    /*---------- CHECK CONTENTS ----------*/
 
+    int containsDatetime(const std::string& datetime_) const;
+    
 };
 
 } // namespace

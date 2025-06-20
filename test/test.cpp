@@ -2,53 +2,55 @@
 #include <string>
 
 #include "Portfolio.h"
-
+#include "HistoricalEquityData.h"
+#include "DateTime.h"
 
 int main()
 {
 
-    // // std::cout << "Hello" << std::endl;
+    // std::string d = "20250619 01:00:00";
 
-    // AlgoTrading::EquitySnapshot h("20201201", 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    // // AlgoTrading::DateTime dt = (d);
 
-    // AlgoTrading::HistoricalEquityData hd("AAPL", "M", 1);
+    // AlgoTrading::DateTime dt = (std::string("20250619"));
 
-    // for ( int i = 0; i < 5; i++)
-    // {
-    //     hd.append_data(h);
-    // }
+    // dt.print();
 
-    // // std::cout << h.get_datetime() << std::endl;
+    // dt = dt + 600;
 
-    // // std::cout << h.get_volume() << std::endl;
+    // dt.print();
 
-    // // std::cout << hd.get_size() << std::endl;
+    AlgoTrading::EquitySnapshot snap("20250618", 100, 99.5, 101.25, 99.8, 99.9, 120);
 
-    // hd.print("BID-ASK");
+    // snap.print();
 
-    // Equity aapl = Equity()
+    AlgoTrading::LiveEquity aapl("AAPL", snap);
 
-    AlgoTrading::Equity aapl("AAPL", 1, 2, 3, 4, 5, 6, 7);
+    // aapl.print();
 
-    AlgoTrading::Equity goog("GOOG", 1, 2, 3, 4, 5, 6, 7);
+    // AlgoTrading::HistoricalEquityData hist("AAPL", AlgoTrading::HOURS, 1);
 
-    AlgoTrading::Portfolio p(10000);
+    // hist.append_data(aapl);
 
-    p.print();
+    // hist.append_data(aapl);
 
-    // std::cout << "Buying Apple..." << std::endl;
+    // hist.append_data(aapl);
 
-    int trade_status = p.buyEquity(aapl, 50, 100, true);
+    // hist.print();
 
-    p.print();
-
-    trade_status = p.buyEquity(goog, 10, 200, true);
-
-    // std::cout << "Successful Trade: " << (trade_status == AlgoTrading::SUCCESSFUL_TRADE) << std::endl; 
+    AlgoTrading::Portfolio p(100000);
 
     p.print();
 
-    trade_status = p.sellEquity("GOOG", 5, 205, true);
+    p.buyEquity(aapl, 100, 205.54, true);
+
+    p.print();
+
+    p.buyEquity(aapl, 50, 200, true);
+
+    p.print();
+
+    p.sellEquity("AAPL", 150, 210, true);
 
     p.print();
 
