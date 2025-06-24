@@ -90,6 +90,8 @@ void EquitySnapshot::print(const int print_type) const
     else
         std::cout << "Print Type " << print_type << " does not exist" << std::endl;
 
+    std::cout << std::endl;
+
     // std::cout << "------------------------------------" << std::endl;
 
 }

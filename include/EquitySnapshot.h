@@ -25,6 +25,8 @@ namespace AlgoTrading
 enum PrintType { TRADE, BID_ASK };
 enum PriceType{ LAST, LOW, HIGH, BID, ASK };
 
+const int DOES_NOT_CONTAIN = -1; // for containsTicker()
+
 class EquitySnapshot
 {
     private:

@@ -1,8 +1,8 @@
 /*
 */
 
-#ifndef EQUITY_H
-#define EQUITY_H
+#ifndef LIVE_EQUITY_H
+#define LIVE_EQUITY_H
 
 #include <string>
 #include <iostream>

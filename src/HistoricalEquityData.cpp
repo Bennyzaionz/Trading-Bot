@@ -100,7 +100,7 @@ void HistoricalEquityData::print(const int print_type) const
 {
     std::cout << "---------- " << ticker << " History ----------" << std::endl;
 
-    for ( int i = 0; i < data.size(); i++ )
+    for ( int i = 0; i < getSize(); i++ )
     {
         data[i].print(print_type);
     }

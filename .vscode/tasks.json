@@ -11,6 +11,7 @@
                 "${workspaceFolder}\\src\\DateTime.cpp",
                 "${workspaceFolder}\\src\\EquitySnapshot.cpp", "${workspaceFolder}\\src\\HistoricalEquityData.cpp", 
                 "${workspaceFolder}\\src\\LiveEquity.cpp", "${workspaceFolder}\\src\\Portfolio.cpp",
+                "${workspaceFolder}\\src\\HistoricalMarketData.cpp",
                 "${file}",
                 "-o",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe"

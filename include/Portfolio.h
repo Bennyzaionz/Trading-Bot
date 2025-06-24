@@ -7,7 +7,7 @@
 namespace AlgoTrading
 {
 
-const int DOES_NOT_CONTAIN = -1; // for containsTicker()
+
 
 enum TradeStatus{ SUCCESSFUL_TRADE, INSUFFICIENT_FUNDS, INSUFFICIENT_SHARES, TICKER_NOT_IN_PORTFOLIO };
 

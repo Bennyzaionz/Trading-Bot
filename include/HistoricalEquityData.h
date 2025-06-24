@@ -57,6 +57,10 @@ class HistoricalEquityData
     int getSize() const { return data.size(); } // returns the size of the data vector (number of Equity snapshots)
     EquitySnapshot getSnapshotAt(std::string& datetime_) const;
 
+    /*---------- SETTERS ----------*/
+
+    
+
     /*---------- APPENDING DATA ----------*/
 
     void append_data(const EquitySnapshot& eq); // { data.push_back(eq); }
