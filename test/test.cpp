@@ -1,106 +1,85 @@
 #include <iostream>
-#include <string>
+#include <thread>
+#include <chrono>
 
-#include "Portfolio.h"
-// #include "HistoricalEquityData.h"
-#include "HistoricalMarketData.h"
-// #include "DateTime.h"
+#include "market/HistoricalMarket.h"
+#include "market/LiveMarket.h"
+#include "trading/Portfolio.h"
+
 
 int main()
 {
+    std::cout << "\nStarting test...\n";
 
-    // std::string d = "20250619 01:00:00";
+    // equity we are interested in
+    std::string ticker = std::string("AAPL");
+    std::string false_ticker = std::string("FALSE");
 
-    // // AlgoTrading::DateTime dt = (d);
+    // don't print trades
+    const bool verbose = false;
 
-    // AlgoTrading::DateTime dt = (std::string("20250619"));
+    // Start by creating a Portfolio, Live Market, and Historical Market
+    AlgoTrading::Portfolio portfolio(1000000);
+    AlgoTrading::LiveMarket live_market;
+    AlgoTrading::HistoricalMarket historical_market;
 
-    // dt.print();
+    // Add equity to live market
+    live_market.addEquity(ticker);
 
-    // dt = dt + 600;
+    // Simulate getting live data from API
+    double last = 100;
+    double low = 98;
+    double high = 104;
+    double bid = 99.9;
+    double ask = 100.1;
+    int volume = 100000;
+    AlgoTrading::DateTime dt = AlgoTrading::getCurrentDateTime();
 
-    // dt.print();
+    live_market.updateLiveEquity(ticker, last, low, high, bid, ask, volume, dt);
 
-    // AlgoTrading::EquitySnapshot snap("20250618", 100, 99.5, 101.25, 99.8, 99.9, 120);
+    historical_market.updateHistoricalMarket(live_market);
 
-    // snap.print();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
-    // AlgoTrading::LiveEquity aapl("AAPL", snap);
+    // AlgoTrading::TradeStatus status;
+    // status = portfolio.marketOrder(AlgoTrading::OrderType::BUY, ticker, live_market, 100, verbose);
 
-    // AlgoTrading::LiveEquity goog("GOOG", snap);
+    // Simulate getting live data from API
+    last = 100;
+    low = 98;
+    high = 104;
+    bid = 100.5;
+    ask = 100.7;
+    volume = 100000;
+    dt = AlgoTrading::getCurrentDateTime();
 
-    // aapl.print();
+    live_market.updateLiveEquity(ticker, last, low, high, bid, ask, volume, dt);
 
-    // AlgoTrading::HistoricalEquityData hist("AAPL", AlgoTrading::HOURS, 1);
+    // historical_market.addEquity(ticker);
 
-    // AlgoTrading::HistoricalMarketData m;
+    historical_market.updateHistoricalMarket(live_market);
 
-    // m.print();
+    // status = portfolio.marketOrder(AlgoTrading::OrderType::SELL, ticker, live_market, 99, verbose);
+    // status = portfolio.marketOrder(AlgoTrading::OrderType::SELL, false_ticker, live_market, 99, verbose);
+    // status = portfolio.marketOrder(AlgoTrading::OrderType::SELL, ticker, live_market, 2, verbose);
+    // status = portfolio.marketOrder(AlgoTrading::OrderType::SELL, ticker, live_market, 1, verbose);
 
-    // m.addEquity("AAPL", AlgoTrading::HOURS, 1);
+    portfolio.print();
 
-    // // m.print();
+    portfolio.printLimitOrders();
 
-    // m.addEquity("GOOG", AlgoTrading::HOURS, 1);
+    historical_market.print();
 
-    // int size = m.getSize();
+    AlgoTrading::EquitySnapshot snap;
 
-    // std::cout << size << std::endl;
+    /*
+    want to be able to call the following:
 
-    // AlgoTrading::HistoricalEquityData hist = m.getHistory("AAPL");
+    portfolio.buyEquity(num_shares, live_equity)
 
-    // hist.print();
-
-    // std::vector<std::string> tickers = m.getTickers();
-
-    // for(int i = 0; i < m.getSize(); i++)
-    // {
-    //     std::cout << tickers[i];
-    // }
-
-    // m.print();
-
-    // m.appendDataTo("AAPL", aapl);
-
-    // m.appendDataTo("GOOG", goog);
-
-    // m.print();
-
-    // hist.append_data(aapl);
-
-    // hist.append_data(aapl);
-
-    // hist.append_data(aapl);
-
-    // hist.print();
-
-    // AlgoTrading::Portfolio p(100000);
-
-    // p.print();
-
-    // p.buyEquity(aapl, 100, 205.54, true);
-
-    // p.print();
-
-    // p.buyEquity(aapl, 50, 200, true);
-
-    // p.print();
-
-    // p.sellEquity("AAPL", 150, 210, true);
-
-    // p.print();
-
-    // int a = 42;
-
-    // int* p = &a;
-
-    // std::cout << "a: " << a << std::endl;
-
-    // std::cout << "addr: " << &a << std::endl;
-
-    // std::cout << "value of p: " << p << std::endl;
-
-    // std::cout << "value stored at addr: " << *p << std::endl;
+    historical_market.update(live_market)
+    
+    */
 
     return 0;
 }

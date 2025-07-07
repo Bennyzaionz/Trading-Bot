@@ -1,0 +1,4 @@
+C:/Algorithmic_Trading/build/CMakeFiles/AlgorithmicTrading.dir
+C:/Algorithmic_Trading/build/CMakeFiles/ALL_BUILD.dir
+C:/Algorithmic_Trading/build/CMakeFiles/ZERO_CHECK.dir
+C:/Algorithmic_Trading/build/src/CMakeFiles/algo_trading.dir

@@ -1,0 +1,14 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Algorithmic_Trading/build/cmake_install.cmake",
+		"C:/Algorithmic_Trading/build/src/cmake_install.cmake",
+		"C:/Algorithmic_Trading/build/src/actor/cmake_install.cmake",
+		"C:/Algorithmic_Trading/build/src/core/cmake_install.cmake",
+		"C:/Algorithmic_Trading/build/src/market/cmake_install.cmake",
+		"C:/Algorithmic_Trading/build/src/strategy/cmake_install.cmake",
+		"C:/Algorithmic_Trading/build/src/trading/cmake_install.cmake",
+		"C:/Algorithmic_Trading/build/src/risk/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

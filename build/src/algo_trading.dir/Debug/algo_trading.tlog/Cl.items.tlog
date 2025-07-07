@@ -1,0 +1,14 @@
+C:\Algorithmic_Trading\src\actor\Actor.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\Actor.obj
+C:\Algorithmic_Trading\src\actor\HistoricalActor.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\HistoricalActor.obj
+C:\Algorithmic_Trading\src\actor\LiveActor.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\LiveActor.obj
+C:\Algorithmic_Trading\src\core\DateTime.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\DateTime.obj
+C:\Algorithmic_Trading\src\core\EquitySnapshot.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\EquitySnapshot.obj
+C:\Algorithmic_Trading\src\market\HistoricalEquity.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\HistoricalEquity.obj
+C:\Algorithmic_Trading\src\market\HistoricalMarket.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\HistoricalMarket.obj
+C:\Algorithmic_Trading\src\market\LiveEquity.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\LiveEquity.obj
+C:\Algorithmic_Trading\src\market\LiveMarket.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\LiveMarket.obj
+C:\Algorithmic_Trading\src\strategy\Strategy.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\Strategy.obj
+C:\Algorithmic_Trading\src\trading\LimitOrder.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\LimitOrder.obj
+C:\Algorithmic_Trading\src\trading\OpenPosition.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\OpenPosition.obj
+C:\Algorithmic_Trading\src\trading\Portfolio.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\Portfolio.obj
+C:\Algorithmic_Trading\src\risk\RiskManager.cpp;C:\Algorithmic_Trading\build\src\algo_trading.dir\Debug\RiskManager.obj
