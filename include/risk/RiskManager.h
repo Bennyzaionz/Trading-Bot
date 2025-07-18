@@ -1,14 +1,16 @@
 #ifndef RISK_MANAGER_H
 #define RISK_MANAGER_H
 
-#include "market/HistoricalEquity.h"
+#include "market/HistoricalMarket.h"
+#include "trading/Portfolio.h"
 #include <utility>
 
 namespace AlgoTrading {
 
-class RiskManager {
+class RiskManager // base risk manager, can be used out of the box, intended to be inhereted for more complex risk management strategies
+{ 
     
-    private:
+    protected:
 
         double max_risk_per_trade;
         double max_position_value;
@@ -20,8 +22,18 @@ class RiskManager {
         double trueRange(double high, double low, double prev_close) const;
         double averageTrueRange(std::vector<EquitySnapshot> daily_hist, int num_days) const;
 
+        // ---------- HELPER FUNCTIONS FOR COMPUTING PORTFOLIO VARIANCE ----------
+        std::vector <double> daily_log_returns(const HistoricalEquity& heq, const int num_days) const;
+        std::vector < std::vector <double> > compute_log_return_matrix(const std::vector<HistoricalEquity>& equities, int num_days) const; // matrix of log returns for equities over time
+        std::vector < std::vector <double> > compute_covariance_matrix(const std::vector < std::vector <double> >& returns) const;
+        double compute_portfolio_std_dev(const std::vector < std::vector <double> >& cov_matrix, const std::vector<double>& weights) const;
+        std::vector <double> compute_portfolio_weights(const Portfolio& p, const HistoricalMarket& hm, const std::vector <std::string>& tickers) const;
+         
+
+        // write a function that computes the weights, then write a function to wrap everything for portfolio volatility where all thats needed is the portfolio and the historical market
+
     public:
-        
+
         /*---------- CONSTRUCTOR ----------*/
 
         RiskManager(double max_risk = 0.02,
@@ -61,6 +73,10 @@ class RiskManager {
                             double stop_loss_price,
                             double take_profit_price) const;
 
+        virtual double compute_equity_risk(const std::string& ticker, const HistoricalMarket& hm) const; // for 1 share of a single equity
+        virtual double compute_equity_risk(const HistoricalEquity& heq) const;
+        
+        virtual double compute_portfolio_risk(const Portfolio& p, const HistoricalMarket& hm) const;
 
 };
 

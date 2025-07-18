@@ -44,6 +44,28 @@ std::vector<std::string> HistoricalMarket::getTickers() const
     return tickers;
 }
 
+std::pair < std::vector <std::string>, std::vector <HistoricalEquity> > HistoricalMarket::getHistoriesVector() const
+{
+    int num_assets = getSize();
+
+    if( num_assets == 0)
+        std::runtime_error("No equities listed in historical market");
+
+    int hist_size = getHistory(getTickers()[0]).getSize();
+
+    std::vector <std::string> tickers = getTickers();
+
+    std::vector <HistoricalEquity> heqs;
+    heqs.reserve(num_assets);
+
+    for( int i = 0; i < num_assets; i++ )
+    {
+        heqs.emplace_back(getHistory(tickers[i]));
+    }
+
+    return {tickers, heqs};
+}
+
 HistoricalEquity HistoricalMarket::getHistory(const std::string& ticker) const
 {
     auto it = hist_equities.find(ticker);
@@ -169,6 +191,22 @@ void HistoricalMarket::updateHistoricalMarket(const LiveMarket& lm)
                 appendData(*live_eq_ptrs[i]);
             }
         }
+    }
+}
+
+void HistoricalMarket::simulateData(std::vector <std::string> tickers, int num_days)
+{
+
+    const DateTime start = getCurrentDateTime();
+
+    for( int i = 0; i < tickers.size(); i++)
+    {
+        addEquity(tickers[i]);
+    }
+
+    for(auto& [ticker, heq] : hist_equities)
+    {
+        heq.simulateData(num_days, 100.0, start);
     }
 }
 

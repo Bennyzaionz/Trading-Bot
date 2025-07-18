@@ -76,6 +76,8 @@ class DateTime
         bool operator==(const DateTime& datetime_) const;
         bool operator<(const DateTime& other) const;
         bool operator>(const DateTime& other) const;
+        bool operator>=(const DateTime& other) const;
+        bool operator<=(const DateTime& other) const;
 
         /*---------- PRINT HELPERS ----------*/
 

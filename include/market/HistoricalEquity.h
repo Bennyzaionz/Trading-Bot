@@ -62,6 +62,8 @@ class HistoricalEquity
 
     size_t getSize() const { return data.size(); } // returns the size of the data vector (number of Equity snapshots)
 
+    double getLastTradePrice() const { return data.back().getLast(); }
+
     int getNumDays() const;
 
 
@@ -78,6 +80,17 @@ class HistoricalEquity
 
     int containsDatetime(const std::string& datetime_) const;
     
+    /*---------- SIMULATING DATA ----------*/
+
+    // simulates daily data using a GBM
+    void simulateData(int num_days,
+                      double start_price,
+                      const DateTime& start,
+                      double volatility = 0.02,
+                      double drift = 0.0005,
+                      double bid_ask_spread = 0.01,
+                      double volume_mean = 100000,
+                      double volume_stddev = 10000);
 };
 
 } // namespace

@@ -53,7 +53,9 @@ class OpenPosition {
 
         /*---------- UPDATE LIVE DATA ----------*/
 
-        void updateLiveEquity(const double last_,
+        void updateLiveEquity(const double open_,
+                              const double close_,
+                              const double last_,
                               const double low_,
                               const double high_,
                               const double bid_,
@@ -63,7 +65,7 @@ class OpenPosition {
 
         /*---------- CHANGING NUMBER OF SHARES ----------*/
 
-        void subtractShares(const int num_shares) { setShares( getShares() - num_shares); }
+        void subtractShares(const int num_shares) { setShares(getShares() - num_shares); }
 
         /*---------- STOP LOSS ----------*/
 

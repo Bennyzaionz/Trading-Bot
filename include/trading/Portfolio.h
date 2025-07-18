@@ -14,6 +14,7 @@ namespace AlgoTrading
 enum class TradeStatus{ SUCCESSFUL_TRADE, 
                         INSUFFICIENT_FUNDS, 
                         INSUFFICIENT_SHARES, 
+                        PARTIAL_FILL,
                         SELL_INDEX_OUT_OF_BOUNDS, 
                         TICKER_NOT_TRACKED,
                         ERROR };
@@ -39,8 +40,9 @@ class Portfolio
                             const double take_profit,
                             const DateTime& open_dt); 
                        
-        void removePosition(int index);                         
-        void removeShares(const int index, const int num_shares);
+        // void removePosition(int index); 
+
+        // void removeShares(const int index, const int num_shares);
 
         TradeStatus buyEquity(const std::shared_ptr<LiveEquity> leq,
                               const int num_shares_buy, 
@@ -55,7 +57,29 @@ class Portfolio
                                const double price, 
                                const bool verbose = false);
 
+        TradeStatus attemptSellNumShares(const std::string& ticker, 
+                                        const int num_shares_attempt_sell, 
+                                        const double price, 
+                                        const bool verbose);
+
+        int getFillVolume(const OrderType order_type,
+                                const double order_price,
+                                const double live_low,
+                                const double live_high,  
+                                const int live_volume);
+
+        double getFillPrice(const OrderType order_type, 
+                            const double live_low, 
+                            const double live_high, 
+                            const double order_price);
+
+        void removeLimitOrder(const int index);
+
     public:
+
+        void removePosition(const int index);
+
+        void removeShares(const int index, const int num_shares);
         
         /*---------- CONSTRUCTOR ----------*/
 
@@ -67,6 +91,7 @@ class Portfolio
         size_t getNumLimitOrders() const { return orders.size(); }
 
         std::vector<std::string> getHoldings() const;
+        std::vector <std::string> getUniqueHoldings() const;
 
         std::vector<LiveEquity> getLiveEquities() const;
 
@@ -74,13 +99,15 @@ class Portfolio
 
         std::vector<int> getNumShares() const;
 
-        int getNumSharesOf(const std::string& ticker);
+        std::vector<size_t> getOpenPositionIndeces(const std::string& ticker) const;
+
+        std::vector<LimitOrder> getLimitOrders() const { return orders; }
+
+        int getNumSharesOf(const std::string& ticker) const;
 
         double getCash() const { return cash; }
 
         double getValue() const;
-        
-        std::vector<LimitOrder> getLimitOrders() const { return orders; }
 
         /*---------- PRINT HELPER ---------*/
 
@@ -124,6 +151,8 @@ class Portfolio
         /*---------- UPDATING ----------*/
 
         UpdateType updateLiveEquity(const std::string& ticker,
+                                    const double open_,
+                                    const double close_,
                                     const double last_,
                                     const double low_,
                                     const double high_,
@@ -132,7 +161,11 @@ class Portfolio
                                     const int volume_,
                                     const DateTime& dt_);
 
-        
+        void deleteExpiredLimitOrders(const DateTime& dt_curr, const bool verbose = false);
+
+        void executeLimitOrders(const LiveMarket& lm, const bool verbose = false);
+
+        void executeStopLossTakeProfit(const bool is_live, const LiveMarket&lm, const bool verbose = false);
 
 };
 

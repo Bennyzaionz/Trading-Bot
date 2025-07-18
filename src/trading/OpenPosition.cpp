@@ -28,7 +28,9 @@ OpenPosition::OpenPosition(const std::string& ticker_,
       take_profit(take_profit_),
       open_dt(open_dt_) {}
 
-void OpenPosition::updateLiveEquity(const double last_,
+void OpenPosition::updateLiveEquity(const double open_,
+                                    const double close_,
+                                    const double last_,
                                     const double low_,
                                     const double high_,
                                     const double bid_,
@@ -36,7 +38,7 @@ void OpenPosition::updateLiveEquity(const double last_,
                                     const int volume_,
                                     const DateTime& dt_)
 {
-    live_equity->updateEquitySnapshot(last_, low_, high_, bid_, ask_, volume_, dt_);
+    live_equity->updateEquitySnapshot(open_, close_, last_, low_, high_, bid_, ask_, volume_, dt_);
 }                                    
 
 bool OpenPosition::hitStopLoss() const {

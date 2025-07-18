@@ -180,6 +180,16 @@ bool DateTime::operator>(const DateTime& other) const {
     return other < *this;
 }
 
+bool DateTime::operator>=(const DateTime& other) const
+{
+    return other > *this || other == *this;
+}
+
+bool DateTime::operator<=(const DateTime& other) const
+{
+    return other < *this || other == *this;
+}
+
 
 // bool DateTime::sameDateAs(const DateTime& datetime_) const
 // {

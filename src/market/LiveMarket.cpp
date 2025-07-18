@@ -37,6 +37,8 @@ std::vector<std::shared_ptr<LiveEquity>> LiveMarket::getEquitiesPtrVector() cons
 }
 
 void LiveMarket::updateLiveEquity(const std::string& ticker,
+                                  const double open,
+                                  const double close,
                                   const double last,
                                   const double low,
                                   const double high,
@@ -47,7 +49,7 @@ void LiveMarket::updateLiveEquity(const std::string& ticker,
 {
     auto it = equities.find(ticker);
     if( containsTicker(ticker) )
-        it -> second -> updateEquitySnapshot(last, low, high, bid, ask, volume, dt);
+        it -> second -> updateEquitySnapshot(open, close, last, low, high, bid, ask, volume, dt);
 }
 
 void LiveMarket::print(const PrintType print_type) const
@@ -55,9 +57,12 @@ void LiveMarket::print(const PrintType print_type) const
     std::cout << std::endl << "---------- Live Market ----------" << std::endl;
 
     for( const auto& [_, equityPtr] : equities)
+    {
         equityPtr -> print(print_type); 
+        std::cout << std::endl;
+    }
         
-    std::cout << std::endl << "---------------------------------" << std::endl;
+    std::cout << "---------------------------------" << std::endl;
 }
 
 }

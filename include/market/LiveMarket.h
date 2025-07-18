@@ -32,13 +32,15 @@ public:
 
     // For live mode: update equity values from TWS API callbacks
     void updateLiveEquity(const std::string& ticker,
-                           const double last,
-                           const double low,
-                           const double high,
-                           const double bid,
-                           const double ask,
-                           const int volume,
-                           const DateTime& dt);
+                          const double open,
+                          const double close,
+                          const double last,
+                          const double low,
+                          const double high,
+                          const double bid,
+                          const double ask,
+                          const int volume,
+                          const DateTime& dt);
 
     /*---------- PRINT HELPERS ----------*/
     void print(const PrintType print_type = PrintType::BID_ASK) const;

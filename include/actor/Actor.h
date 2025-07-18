@@ -13,7 +13,7 @@ class Actor
 {
 
     protected:
-
+        // change to unique_ptr?
         std::shared_ptr<Strategy> strategy;
         std::shared_ptr<RiskManager> riskManager;
         std::shared_ptr<HistoricalMarket> marketData; 
@@ -31,7 +31,7 @@ class Actor
 
         
     // Pure virtual: derived classes must implement this main logic per tick
-    virtual void onTick() = 0;
+    virtual void onTick(const DateTime& dt, const LiveMarket& lm) = 0;
 
     // Optional: lifecycle hooks
     virtual void onStart() {}

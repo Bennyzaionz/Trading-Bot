@@ -26,28 +26,36 @@ dt(DateTime()), last(-1), low(-1), high(-1), bid(-1), ask(-1), volume(0) {}
 
 
 EquitySnapshot::EquitySnapshot(const std::string& datetime_,
+                               const double open_,
+                               const double close_,
                                const double last_,
                                const double low_,
                                const double high_,
                                const double bid_,
                                const double ask_,
                                int volume_):
-dt(DateTime(datetime_)), last(last_), low(low_), high(high_), bid(bid_), ask(ask_), volume(volume_) {} 
+dt(DateTime(datetime_)), open(open_), close(close_), last(last_), low(low_), high(high_), bid(bid_), ask(ask_), volume(volume_) {} 
 
 EquitySnapshot::EquitySnapshot(const DateTime& datetime_,
+                               const double open_,
+                               const double close_,
                                const double last_,
                                const double low_,
                                const double high_,
                                const double bid_,
                                const double ask_,
                                int volume_):
-dt(datetime_), last(last_), low(low_), high(high_), bid(bid_), ask(ask_), volume(volume_) {} 
+dt(datetime_), open(open_), close(close_), last(last_), low(low_), high(high_), bid(bid_), ask(ask_), volume(volume_) {} 
 
 /*---------- GETTERS ----------*/
 
 double EquitySnapshot::getPrice(const PriceType price_type) const
 {
-    if( price_type == PriceType::LAST )
+    if( price_type == PriceType::OPEN)
+        return getOpen();
+    else if( price_type == PriceType::CLOSE)
+        return getClose();
+    else if( price_type == PriceType::LAST )
         return getLast();
     else if( price_type == PriceType::LOW)
         return getLow();
@@ -78,7 +86,7 @@ void EquitySnapshot::print(const PrintType print_type) const
                   << ", Volume: " << getVolume(); // << std::endl;
     }
 
-    else if ( print_type == PrintType::BID_ASK)
+    else if ( print_type == PrintType::BID_ASK )
     {
 
         std::cout << "Updated at: " << getDateTime().toString()
@@ -86,7 +94,16 @@ void EquitySnapshot::print(const PrintType print_type) const
                   << ", Ask: " << getAsk();  
                   //<< std::endl;
     
-}
+    }
+
+    else if( print_type == PrintType::OHLC )
+    {
+        std::cout << "Updated at: " << getDateTime().toString()
+                  << ", Open: " << getOpen() 
+                  << ", High: " << getHigh()        
+                  << ", Low: " << getLow() 
+                  << ", Close: " << getClose();
+    }
     else
         std::cout << "Print Type does not exist" << std::endl;
 

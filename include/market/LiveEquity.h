@@ -24,11 +24,16 @@ class LiveEquity
 
         LiveEquity(const std::string& ticker_ = "", const EquitySnapshot& snap = EquitySnapshot());
 
+        /*---------- OPERATORS ----------*/
+        // LiveEquity& operator=(LiveMarket& other);
+
         /*---------- GETTERS ----------*/
 
         std::string getTicker() const { return ticker; }
         DateTime getDatetime() const { return currentSnapshot.getDateTime(); }
 
+        double getOpen() const { return currentSnapshot.getOpen(); }
+        double getClose() const { return currentSnapshot.getClose(); }
         double getLast() const { return currentSnapshot.getLast(); }
         double getLow() const { return currentSnapshot.getLow(); }
         double getHigh() const { return currentSnapshot.getHigh(); }
@@ -41,6 +46,8 @@ class LiveEquity
         /*---------- SETTERS ----------*/
     
         void setDatetime(const DateTime& datetime_) { currentSnapshot.setDateTime(datetime_); }
+        void setOpen(const double open_) { currentSnapshot.setOpen(open_); }
+        void setClose(const double close_) { currentSnapshot.setClose(close_); }
         void setLast(const double last_) { currentSnapshot.setLast(last_); }
         void setLow(const double low_) { currentSnapshot.setLow(low_); }
         void setHigh(const double high_) { currentSnapshot.setHigh(high_); }
@@ -50,7 +57,9 @@ class LiveEquity
 
         /*---------- UPDATE ----------*/
 
-        void updateEquitySnapshot(const double last_,
+        void updateEquitySnapshot(const double open_,
+                                  const double close_,
+                                  const double last_,
                                   const double low_,
                                   const double high_,
                                   const double bid_,

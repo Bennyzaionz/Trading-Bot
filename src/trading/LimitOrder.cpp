@@ -29,8 +29,7 @@ void LimitOrder::print() const {
               << " " << quantity << " " << ticker
               << " @ " << price << "] "
               << "Created: " << creation_time.toString()
-              << " | Expires: " << expiry_time.toString()
-              << std::endl;
+              << " | Expires: " << expiry_time.toString();
 }
 
 } // namespace AlgoTrading

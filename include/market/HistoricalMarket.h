@@ -32,7 +32,7 @@ class HistoricalMarket
 
         // std::vector<HistoricalEquity> hist_equities;
         std::unordered_map<std::string, HistoricalEquity> hist_equities;
-        const StepSizeUnit step_unit; // enum
+        const StepSizeUnit step_unit; // enum, also used for risk manager to 
         const int step_length;
 
     public:
@@ -51,6 +51,7 @@ class HistoricalMarket
         int getStepLength() const { return step_length; }
         // std::vector<HistoricalEquity> getHistories() const { return hist_equities; }
         std::unordered_map<std::string, HistoricalEquity> getHistories() const { return hist_equities; }
+        std::pair < std::vector <std::string>, std::vector <HistoricalEquity> > getHistoriesVector() const;
         size_t getSize() const { return hist_equities.size(); }
 
         std::vector<std::string> getTickers() const;
@@ -72,6 +73,10 @@ class HistoricalMarket
         /*----------  PRINT HELPER ----------*/
 
         void print(const PrintType print_type = PrintType::BID_ASK) const;
+
+        /*---------- SIMULATING DATA ----------*/
+
+        void simulateData(std::vector <std::string> tickers, int num_days);
 
 };
 

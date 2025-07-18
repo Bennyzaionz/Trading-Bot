@@ -12,6 +12,7 @@ It contains a vector of MarketSnapshots defined in Market_Snapshot.h
 #include <algorithm>
 #include <iostream>
 #include <format>
+#include <random>
 
 #include "market/HistoricalEquity.h"
 
@@ -145,6 +146,8 @@ std::vector<EquitySnapshot> HistoricalEquity::getDailySnapshots() const
         if( next_day != curr_day ) // last snapshot of day
         {
             snap.setLast(snaps[i].getLast());
+            snap.setOpen(snaps[i].getOpen());
+            snap.setClose(snaps[i].getClose());
 
             daily_snaps.push_back(snap);
 
@@ -237,29 +240,54 @@ void HistoricalEquity::appendData(const LiveEquity& leq)
     data.push_back(leq.getCurrentSnapshot());
 }
 
-// ---------- USE FOR BACKTESTING LOOP TO ADD CORRECT TIME TO EACH TIME STEP BEFORE LIVE
-// ---------- DATA ACCESSES THE DT
-// DateTime HistoricalEquity::datetimeHandler(const DateTime& datetime_) const
-// {
+void HistoricalEquity::simulateData(int num_days,
+                                    double start_price,
+                                    const DateTime& start_date,
+                                    double volatility,
+                                    double drift,
+                                    double bid_ask_spread,
+                                    double volume_mean,
+                                    double volume_stddev)
+{
+    data.clear();
+    data.reserve(num_days);
 
-//     const int numInstances = countDate(datetime_);
+    LiveEquity leq;
 
-//     if( step_unit == SECS )
-//     {
-//         return datetime_ + numInstances*step_length;
-//     }
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::normal_distribution<> z(0.0, 1.0);
+    std::normal_distribution<> vol_dist(volume_mean, volume_stddev);
+    std::normal_distribution<> spread_noise(0.0, bid_ask_spread * 0.25);
 
-//     else if( step_unit == MINS )
-//     {
-//         return datetime_ + numInstances*step_length*60;
-//     }
+    double price = start_price;
+    DateTime current_date = start_date;
 
-//     else if( step_unit == HOURS )
-//     {
-//         return datetime_ + numInstances*step_length*3600;
-//     }
+    for (int i = 0; i < num_days; ++i) {
+        double return_pct = drift + volatility * z(gen);
+        double close = price * std::exp(return_pct);
+        double last = close;
 
-//     return datetime_;
-// }
+        double range = close * 0.01;
+        double open = price;
+        double high = std::max(open, close) + std::abs(range * z(gen));
+        double low = std::min(open, close) - std::abs(range * z(gen));
+
+        double spread = bid_ask_spread + spread_noise(gen);
+        double bid = close - spread / 2.0;
+        double ask = close + spread / 2.0;
+
+        double volume = std::max(0.0, vol_dist(gen));
+
+        // snapshots.push_back({open, high, low, close, bid, ask, volume, current_date});
+
+        leq.updateEquitySnapshot(open, close, last, low, high, bid, ask, (int)volume, current_date);
+
+        appendData(leq);
+
+        price = close;
+        current_date = current_date + 86400; // add 1 day (in seconds)
+    }
+}
 
 } // namespace

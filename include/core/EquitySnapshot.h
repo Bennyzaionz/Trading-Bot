@@ -22,8 +22,8 @@
 namespace AlgoTrading
 {
 
-enum class PrintType { TRADE, BID_ASK };
-enum class PriceType { LAST, LOW, HIGH, BID, ASK };
+enum class PrintType { TRADE, BID_ASK, OHLC };
+enum class PriceType { OPEN, CLOSE, LAST, LOW, HIGH, BID, ASK };
 enum class UpdateType { SUCCESSFUL_UPDATE, TICKER_NOT_IN_PORTFOLIO };
 
 const int DOES_NOT_CONTAIN = -1; // for containsTicker()
@@ -33,6 +33,8 @@ class EquitySnapshot
     private:
 
         DateTime dt;
+        double open;
+        double close;
         double last;
         double low;
         double high;
@@ -47,6 +49,8 @@ class EquitySnapshot
         EquitySnapshot(); 
 
         EquitySnapshot(const std::string& datetime_, 
+                       const double open_ = -1,
+                       const double close_ = -1,
                        const double last_ = -1,
                        const double low_ = -1,
                        const double high_ = -1,
@@ -55,6 +59,8 @@ class EquitySnapshot
                        const int volume_ = 0);
 
         EquitySnapshot(const DateTime& datetime_, 
+                       const double open_ = -1,
+                       const double close_ = -1,
                        const double last_ = -1,
                        const double low_ = -1,
                        const double high_ = -1,
@@ -66,6 +72,8 @@ class EquitySnapshot
 
         DateTime getDateTime() const { return dt; }
 
+        double getOpen() const { return open; }
+        double getClose() const { return close; }
         double getLast() const { return last; }
         double getLow() const { return low; }
         double getHigh() const { return high; }
@@ -78,6 +86,8 @@ class EquitySnapshot
         
         /* ---------- SETTERS ---------*/
     
+        void setOpen(const double open_) { open = open_; }
+        void setClose(const double close_) { close = close_; }
         void setLast(const double last_) { last = last_; }
         void setLow(const double low_) { low = low_; }
         void setHigh(const double high_) { high = high_; }
@@ -91,6 +101,8 @@ class EquitySnapshot
         /*---------- PRINT HELPER ----------*/
 
         void print(const PrintType print_type = PrintType::BID_ASK) const;
+
+
 };
 
 } // namespace
