@@ -7,6 +7,7 @@
 #include "market/LiveMarket.h"
 #include "trading/Portfolio.h"
 #include "risk/RiskManager.h"
+// #include "Eigen/Dense"
 
 int main()
 {
@@ -20,85 +21,17 @@ int main()
     // // don't print trades
     // const bool verbose = false;
 
-    // // Start by creating a Portfolio, Live Market, and Historical Market
-    // AlgoTrading::Portfolio portfolio(1000000);
-    // AlgoTrading::LiveMarket live_market;
-    // AlgoTrading::HistoricalMarket historical_market;
-
-    // // Add equity to live market
-    // live_market.addEquity(ticker);
-
-    // // Simulate getting live data from API
-    // double open = 100;
-    // double close = 100;
-    // double last = 100;
-    // double low = 98;
-    // double high = 104;
-    // double bid = 99.9;
-    // double ask = 100.1;
-    // int volume = 100000;
-    // AlgoTrading::DateTime dt = AlgoTrading::getCurrentDateTime();
-
-    // live_market.updateLiveEquity(ticker, open, close, last, low, high, bid, ask, volume, dt);
-
-    // live_market.print();
-
-    // historical_market.updateHistoricalMarket(live_market);
-
-    // status = portfolio.marketOrder(AlgoTrading::OrderType::BUY,
-    //                                live_market.getEquity(ticker),
-    //                                10,
-    //                                true);
-
-    // // status = portfolio.limitOrder(AlgoTrading::OrderType::BUY,
-    // //                               ticker, 
-    // //                               5, 
-    // //                               105, 
-    // //                               AlgoTrading::getCurrentDateTime(),
-    // //                               AlgoTrading::getCurrentDateTime(),
-    // //                               true); 
-                                  
-    // // portfolio.printLimitOrders();
-
-    // // portfolio.executeLimitOrders(live_market, true);
-                                  
-    // portfolio.print();
-
-    // // std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-
-    // // status = portfolio.marketOrder(AlgoTrading::OrderType::BUY, ticker, live_market, 100, verbose);
-
-    // // Simulate getting live data from API
-    // open = 100;
-    // close = 100;
-    // last = 100;
-    // low = 120;
-    // high = 150;
-    // bid = 85;
-    // ask = 84;
-    // volume = 100000;
-    // dt = AlgoTrading::getCurrentDateTime();
-
-    // live_market.updateLiveEquity(ticker, open, close, last, low, high, bid, ask, volume, dt);
-
-    // live_market.print();
-
-    // historical_market.updateHistoricalMarket(live_market);
-
-    // status = portfolio.marketOrder(AlgoTrading::OrderType::SELL,
-    //                                live_market.getEquity(ticker),
-    //                                10,
-    //                                true);
-
-    // create instances of classes 
+    // create instances of classes
+    // order is important since classes reference other classes in their construction
     AlgoTrading::HistoricalMarket hm;
     AlgoTrading::LiveMarket lm;
-    AlgoTrading::Portfolio p(1000000);
+    AlgoTrading::Portfolio p(hm, 1000000);
 
     // simulate historical market data
     std::vector <std::string> tickers = {"AAPL", "GOOG", "NVDA", "AMZN", "META"};
     hm.simulateData(tickers, 25);
-    // hm.print(AlgoTrading::PrintType::OHLC);
+
+    AlgoTrading::RiskManager rm(p, hm, 0.05, 0.012);
 
     // simulate live market data
     AlgoTrading::DateTime now = AlgoTrading::getCurrentDateTime();
@@ -108,21 +41,55 @@ int main()
         lm.updateLiveEquity(tickers[i], 100, 100, 100, 100, 100, 100, 100, 100, now);
     }
 
-    lm.print();
+    lm.print(AlgoTrading::PrintType::TRADE);
+
+    rm.updateRiskInputs(20);
 
     // p.marketOrder(AlgoTrading::OrderType::BUY, lm.getEquity(tickers[0]), 100, true);
 
     for( int i = 0; i < tickers.size(); i++ )
     {
-        p.marketOrder(AlgoTrading::OrderType::BUY, lm.getEquity(tickers[i]), (i+1)*(i+1), true);
-        p.marketOrder(AlgoTrading::OrderType::BUY, lm.getEquity(tickers[i]), i+1, true);
+        // p.marketOrder(AlgoTrading::OrderType::BUY, lm.getEquity(tickers[i]), (i+1)*(i+1), true);
+        // p.marketOrder(AlgoTrading::OrderType::BUY, lm.getEquity(tickers[i]), i+1, true);
+
+        p.marketOrder(AlgoTrading::OrderType::BUY, tickers[i], (i+1)*(i+1), rm, true);
+        p.marketOrder(AlgoTrading::OrderType::BUY, tickers[i], (i+1)*(i+1), rm, true);
     }
 
-    AlgoTrading::RiskManager rm;
+    rm.updateRiskInputs(20);
 
-    double portfolio_risk = rm.compute_portfolio_risk(p, hm);
+    rm.updateRisk();
 
-    std::cout << std::endl << "Portfolio Risk: " << portfolio_risk << std::endl;
+    // std::cout << "weights: \n" << rm.getPortfolioWeights() << std::endl;
+
+    // std::cout << "cov: \n" << rm.getCovarianceMatrix() << std::endl;
+
+    // std::cout << std::endl << "Cash Available: " << p.getCash() << std::endl;
+
+    Eigen::VectorXd basket(tickers.size());
+
+    for( int i = 0; i < tickers.size(); i++ )
+    {
+        basket(i) = double(i)/(1 + i*i*i);
+    }
+
+    Eigen::VectorXi max_basket_size = rm.computeMaximumAllowableBasketSize(basket, 20);
+
+    std::cout << "max pos size: \n" << max_basket_size << std::endl;
+
+    // std::pair <double, double> stops = rm.computeStopLossTakeProfit(tickers[0], 100);
+
+    // std::cout << "stops: " << stops.first << ", " << stops.second << std::endl;
+
+    std::cout << "Portfolio Risk: " << rm.getPortfolioRisk() << std::endl << std::endl;
+
+    p.print();
+
+    std::cout << "Portfolio Risk: " << rm.getPortfolioRisk() << std::endl << std::endl;
+
+    // hm.print();
+
+    std::cout << "Num Shares of GOOG: " << p.getNumSharesOf(tickers[1]) << std::endl;
 
     return 0;
 }

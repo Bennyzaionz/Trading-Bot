@@ -59,6 +59,19 @@ class HistoricalMarket
         HistoricalEquity getHistory(const std::string& ticker) const;
         bool containsTicker(const std::string& ticker = "") const;
 
+        /*---------- GET LATEST AVAILABLE DATA ----------*/
+        DateTime getLatestDateTime(const std::string& ticker) const;
+        double getLatestBid(const std::string& ticker) const;
+        double getLatestAsk(const std::string& ticker) const;
+        double getLatestLast(const std::string& ticker) const;
+        double getLatestOpen(const std::string& ticker) const;
+        double getLatestClose(const std::string& ticker) const;
+        double getLatestHigh(const std::string& ticker) const;
+        double getLatestLow(const std::string& ticker) const;
+
+        /*---------- CHECK STATE ----------*/
+        bool isEmpty() const { return hist_equities.empty(); }
+
         /*---------- ADDING EQUITIES ----------*/
 
         void addEquity(const std::string& ticker, const bool verbose = false);

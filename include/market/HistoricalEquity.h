@@ -55,6 +55,13 @@ class HistoricalEquity
     std::vector<DateTime> getDatetimes() const;
 
     DateTime getMostRecentDateTime() const;
+    double getLatestBid() const;
+    double getLatestAsk() const;
+    double getLatestLast() const;
+    double getLatestOpen() const;
+    double getLatestClose() const;
+    double getLatestHigh() const;
+    double getLatestLow() const;
 
     std::vector<double> getHistoricalPrices(const PriceType price_type) const;
 

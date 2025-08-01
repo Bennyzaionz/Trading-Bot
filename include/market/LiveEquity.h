@@ -42,6 +42,7 @@ class LiveEquity
         double getMarketValue() const { return (currentSnapshot.getAsk() + currentSnapshot.getBid() )/2; }
         double getVolume() const { return currentSnapshot.getVolume(); }
         EquitySnapshot getCurrentSnapshot() const { return currentSnapshot; }
+        
 
         /*---------- SETTERS ----------*/
     

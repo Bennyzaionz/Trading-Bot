@@ -4,12 +4,16 @@
 #include <vector>
 #include "trading/OpenPosition.h"
 #include "trading/LimitOrder.h"
-#include "market/LiveMarket.h"
+// #include "market/LiveMarket.h"
+#include "market/HistoricalMarket.h"
+// #include "risk/RiskManager.h"
+
+
 
 namespace AlgoTrading
 {
 
-
+class RiskManager; // forward declare to avoid circular inclusion with Portfolio.h
 
 enum class TradeStatus{ SUCCESSFUL_TRADE, 
                         INSUFFICIENT_FUNDS, 
@@ -26,31 +30,45 @@ class Portfolio
 {
     private:
         
+        // portfolio values that need to be tracked
         double cash;
         std::vector<OpenPosition> pos;
         std::vector<LimitOrder> orders;
 
+        // references for classes that are used frequently
+        const HistoricalMarket& hm;
+
         double getCommission(int quantity) const;
 
         // appends to pos vector
-        void addNewPosition(const std::shared_ptr<LiveEquity> leq, 
+        // void addNewPosition(const std::shared_ptr<LiveEquity> leq, 
+        //                     const int num_shares,
+        //                     const double purchase_price,
+        //                     const double stop_loss,
+        //                     const double take_profit,
+        //                     const DateTime& open_dt); 
+
+        void addNewPosition(const std::string& ticker,
                             const int num_shares,
                             const double purchase_price,
-                            const double stop_loss,
-                            const double take_profit,
-                            const DateTime& open_dt); 
-                       
-        // void removePosition(int index); 
+                            const RiskManager& rm);
 
-        // void removeShares(const int index, const int num_shares);
+        void removePosition(const int index);
 
-        TradeStatus buyEquity(const std::shared_ptr<LiveEquity> leq,
-                              const int num_shares_buy, 
-                              const double price,
-                              const double stop_loss,
-                              const double take_profit, 
-                              const DateTime& dt,
-                              const bool verbose = false); // important to populate equity with data once the str is added
+        void removeShares(const int index, const int num_shares);
+
+        // TradeStatus buyEquity(const std::shared_ptr<LiveEquity> leq,
+        //                       const int num_shares_buy, 
+        //                       const double price,
+        //                       const RiskManager& rm, 
+        //                       const DateTime& dt,
+        //                       const bool verbose = false); // important to populate equity with data once the str is added
+
+        TradeStatus buyEquity(const std::string& ticker,
+                              const int num_shares_buy,
+                              const double purchase_price,
+                              const RiskManager& rm,
+                              const bool verbose); // used to compute stop loss and take profit which is required for every position
         
         TradeStatus sellEquity(const int index, 
                                const int num_shares_sell, 
@@ -76,14 +94,10 @@ class Portfolio
         void removeLimitOrder(const int index);
 
     public:
-
-        void removePosition(const int index);
-
-        void removeShares(const int index, const int num_shares);
         
         /*---------- CONSTRUCTOR ----------*/
 
-        Portfolio(const double cash_); // only construct Portfolio with empty equities and num_shares to ensure that amounts line up
+        Portfolio(const HistoricalMarket& hm_, const double cash_);
 
         /*---------- GETTERS ----------*/
         
@@ -93,7 +107,7 @@ class Portfolio
         std::vector<std::string> getHoldings() const;
         std::vector <std::string> getUniqueHoldings() const;
 
-        std::vector<LiveEquity> getLiveEquities() const;
+        // std::vector<LiveEquity> getLiveEquities() const;
 
         std::vector<OpenPosition> getOpenPositions() const { return pos; }
 
@@ -107,7 +121,9 @@ class Portfolio
 
         double getCash() const { return cash; }
 
-        double getValue() const;
+        double getCashValue() const; // gets sum of last traded prices
+
+        double getValue() const; // gets sum of bid prices
 
         /*---------- PRINT HELPER ---------*/
 
@@ -119,53 +135,44 @@ class Portfolio
 
         int ContainsOpenOrderWithTicker(const std::string ticker_ = "") const; // returns the index of the ticker if it exists, otherwise returns -1
 
-        /*---------- BUYING AND SELLING ----------*/
+        /*---------- Orders ----------*/
 
         TradeStatus marketOrder(const OrderType order_type,
-                                const std::shared_ptr<LiveEquity> leq,
+                                const std::string& ticker,
                                 const int num_shares,
-                                const bool verbose = false);
+                                const RiskManager& rm,
+                                const bool verbose);
 
-        TradeStatus marketOrder(const OrderType order_type,
-                                const std::string ticker,
-                                const LiveMarket& lm,
+        TradeStatus marketOrder(const std::string& ticker,
                                 const int num_shares,
-                                const bool verbose = false);
+                                const RiskManager& rm,
+                                const bool verbose);
+
+        // rm already ensured that order can be purchased with available cash
+        TradeStatus basketMarketOrder(const std::vector <std::pair <std::string, int> >& basket,
+                                      const RiskManager& rm,
+                                      const bool verbose);
 
         TradeStatus limitOrder(const OrderType order_type,
-                               const std::string&ticker,
+                               const std::string& ticker,
                                const int num_shares,
                                const int desired_price,
-                               const DateTime& dt,
-                               const DateTime& exp,
-                               const bool verbose = false);
+                               const DateTime& dt_order_placed,
+                               const DateTime& dt_exp,
+                               const bool verbose);
 
-        TradeStatus limitOrder(const OrderType order_type,
-                               const LiveEquity& leq,
-                               const int num_shares,
-                               const int desired_price,
-                               const DateTime& dt_placed,
-                               const DateTime& exp,
-                               const bool verbose = false);
 
-        /*---------- UPDATING ----------*/
-
-        UpdateType updateLiveEquity(const std::string& ticker,
-                                    const double open_,
-                                    const double close_,
-                                    const double last_,
-                                    const double low_,
-                                    const double high_,
-                                    const double bid_,
-                                    const double ask_,
-                                    const int volume_,
-                                    const DateTime& dt_);
 
         void deleteExpiredLimitOrders(const DateTime& dt_curr, const bool verbose = false);
 
-        void executeLimitOrders(const LiveMarket& lm, const bool verbose = false);
+        void executeLimitOrders(const LiveMarket& lm, const RiskManager& rm, const bool verbose = false);
 
-        void executeStopLossTakeProfit(const bool is_live, const LiveMarket&lm, const bool verbose = false);
+        // 
+        void executeStopLossTakeProfit(const bool is_live, const LiveMarket&lm, const RiskManager& rm, const bool verbose = false);
+
+        // only used for live trading since broker will store cash amount, and executing orders
+        // TODO:
+        void updatePortfolio();
 
 };
 

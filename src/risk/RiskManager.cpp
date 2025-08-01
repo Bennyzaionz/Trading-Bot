@@ -6,238 +6,225 @@
 
 namespace AlgoTrading {
 
-// Constructor definition
-RiskManager::RiskManager(double max_risk_,
-                         double max_position_,
-                         int max_trades_,
-                         double min_rr_,
-                         double k_sl_)
-    : max_risk_per_trade(max_risk_),
-      max_position_value(max_position_),
-      max_trades_per_day(max_trades_),
-      min_risk_reward_ratio(min_rr_),
-      k_sl(k_sl_) {}
+/*---------- CONSTRUCTORS ----------*/
 
-std::vector <double> RiskManager::daily_log_returns(const HistoricalEquity& heq, const int num_days) const
+RiskManager::RiskManager(const Portfolio& p_, const HistoricalMarket& hm_, double max_value_per_trade_, double max_portfolio_risk_) : 
+                         max_value_per_trade(max_value_per_trade_), max_portfolio_risk(max_portfolio_risk_), p(p_), hm(hm_), tickers(hm_.getTickers()) {}
+
+/*---------- SETTERS ----------*/
+
+Eigen::VectorXd RiskManager::getDailyLogReturns(const HistoricalEquity& heq, const int num_days) const
 {
     std::vector <EquitySnapshot> snaps = heq.getDailySnapshots();
 
     if( snaps.size() < num_days + 1) // must account for i-1 for log returns
-        return {-1.0};
+        return Eigen::VectorXd(-1);
 
-    std::vector <double> log_returns;
+    Eigen::VectorXd log_returns(num_days);
 
-    for( int i = snaps.size() - 1; i >= snaps.size() - num_days - 1; i--) // iterate backwards to get most recent days
+    int snaps_index;
+    int num_snaps = snaps.size();
+
+    for( int i = 0; i < num_days; i++ )
     {
-        log_returns.push_back( std::log( snaps[i].getClose() / snaps[i-1].getClose() ) );
+        snaps_index = num_snaps - 1 - i;
+
+        // fill log_returns starting at 0 and increasing
+        // index snaps from end -> 0 for num_days
+        log_returns(i) = std::log( snaps[snaps_index].getClose() / snaps[snaps_index-1].getClose() );
     }
 
     return log_returns;
 }
 
-std::vector < std::vector <double> > RiskManager::compute_log_return_matrix(const std::vector<HistoricalEquity>& equities, const int num_days) const // rows = days, columns = equities
+int RiskManager::getIndexOfTicker(const std::string& ticker) const
 {
-    int num_assets = equities.size();
-
-    // declare matrix to store returns for each day for each asset
-    std::vector < std::vector <double> > return_matrix(num_days, std::vector<double>(num_assets)); // rows = days, columns = equities
-
-    // populate matrix with daily log returns
-    for( int asset = 0; asset < num_assets; asset++ )
+    auto it = std::find(tickers.begin(), tickers.end(), ticker);
+    if( it != tickers.end() )
     {
-        const std::vector<EquitySnapshot>& snaps = equities[asset].getDailySnapshots();
-
-        std::vector <double> log_returns = daily_log_returns(equities[asset], num_days); // returns most recent day in position 0
-        
-        if( snaps.size() < num_days + 1)
-        {
-            throw std::runtime_error("Not enough data for one of the assets");
-        }
-
-        for( int day = 0; day < num_days; day++ )
-        {
-            return_matrix[day][asset] = log_returns[day];
-        }
+        return std::distance(tickers.begin(), it);
     }
-
-    return return_matrix;
+    else
+        return -1;
 }
 
-std::vector < std::vector <double> > RiskManager::compute_covariance_matrix(const std::vector < std::vector <double> >& returns) const
+/*---------- UPDATING RISK DATA ----------*/
+
+// tickers vector is to keep consistent indexing of equities in matrices across helper functions, call hm.getTickers() in wrapper function and pass to all helper functions
+Eigen::MatrixXd RiskManager::computeReturnsMatrix(const int num_days) const // rows = days, columns = equities
 {
-    int num_days = returns.size();
-    int num_assets = returns[0].size();
 
-    // compute mean for each column
-    std::vector <double> mean_returns(num_assets, 0.0);
+    int rows = num_days;
 
-    for( const auto& row : returns )
-        for( int i =0; i < num_assets; i++ )
-            mean_returns[i] += row[i];
-    for( double &m : mean_returns)
-        m /= num_days;
+    int columns = tickers.size(); // number if equities in the historical market
 
-    // compute covariance matrix
-    std::vector< std::vector <double> > cov_matrix(num_assets, std::vector<double>(num_assets, 0.0));
+    Eigen::MatrixXd returns_matrix(rows, columns);
 
-    // use ++i for very slight performance improvement (no copy required)
-    for (int i = 0; i < num_assets; ++i) // loop through assets
+    for( int i = 0; i < columns; i++ )
     {
-        for (int j = i; j < num_assets; ++j) // only compute upper triangle (also loops through assets)
-        {
-            double cov = 0.0;
-            for (int k = 0; k < num_days; ++k) // compute covariance between asset i and j across num_days
-            {
-                cov += (returns[k][i] - mean_returns[i]) * (returns[k][j] - mean_returns[j]); // contribution to covariance between asset i, and j, based on returns from day k
-            }
-            cov /= (num_days - 1);
-            cov_matrix[i][j] = cov_matrix[j][i] = cov; // mirror upper triangle
-        }
+        returns_matrix.col(i) = getDailyLogReturns(hm.getHistory(tickers[i]), num_days);
     }
 
-    return cov_matrix;    
+    return returns_matrix;
 }
 
-double RiskManager::compute_portfolio_std_dev(const std::vector < std::vector <double> >& cov_matrix, const std::vector<double>& weights) const
+Eigen::RowVectorXd RiskManager::computeExpectedReturns(const Eigen::MatrixXd& returns) const
 {
-    int N = weights.size();
-    double variance = 0.0;
-
-    // wT * sigma * w
-    for (int i = 0; i < N; ++i)
-        for (int j = 0; j < N; ++j)
-            variance += weights[i] * weights[j] * cov_matrix[i][j];
-
-    return std::sqrt(variance);
+    return returns.colwise().mean();
 }
 
-std::vector <double> RiskManager::compute_portfolio_weights(const Portfolio& p, const HistoricalMarket& hm, const std::vector <std::string>& tickers) const
+// run after expected returns
+Eigen::RowVectorXd RiskManager::computeVarianceReturns(const Eigen::MatrixXd& returns) const
 {
-    // std::vector <std::string> unique_tickers = p.getUniqueHoldings();
-    int num_unique_holdings = tickers.size();
-    
-    std::vector <double> weights(num_unique_holdings);
-    // weights.reserve(num_unique_holdings);
+    Eigen::MatrixXd centered = returns.rowwise() - expected_returns;
 
-    for( int i = 0; i < num_unique_holdings; i++ )
+    return (centered.array().square().colwise().sum()) / (returns.rows()-1);
+}
+
+Eigen::MatrixXd RiskManager::computeCovarianceMatrix(const Eigen::MatrixXd& returns) const
+{
+    Eigen::MatrixXd centered = returns.rowwise() - returns.colwise().mean();
+    Eigen::MatrixXd cov = (centered.transpose() * centered) / double(returns.rows() - 1);
+
+    return cov;
+}
+
+// the cash value of the equities held in the portfolio (excludes cash)
+double RiskManager::getPortfolioEquityValue() const
+{
+    int num_equities = tickers.size();
+
+    Eigen::VectorXd weights(num_equities);
+
+    for( int i = 0; i < num_equities; i++ )
     {
-        // weights[i] = p.getNumSharesOf(tickers[i]) * lm.getEquity(tickers[i]) -> getLast();
-        weights[i] = p.getNumSharesOf(tickers[i]) * hm.getHistory(tickers[i]).getLastTradePrice();
+        weights(i) = p.getNumSharesOf(tickers[i]) * hm.getHistory(tickers[i]).getLastTradePrice();
     }
 
-    double portfolio_value = std::accumulate(weights.begin(), weights.end(), 0.0);
+    return weights.sum();
+}
 
-    for( int i = 0; i < num_unique_holdings; i++ )
+// returns 0 if portfolio is empty
+Eigen::VectorXd RiskManager::computePortfolioWeights() const
+{
+    int num_equities = tickers.size();
+
+    Eigen::VectorXd weights(num_equities);
+
+    for( int i = 0; i < num_equities; i++ )
     {
-        weights[i] /= portfolio_value;
+        weights(i) = p.getNumSharesOf(tickers[i]) * hm.getHistory(tickers[i]).getLastTradePrice();
     }
+
+    if( weights.isZero() )
+    {
+        return weights;
+    }
+
+    weights /= weights.sum();
 
     return weights;
 }
 
-double RiskManager::compute_portfolio_risk(const Portfolio& p, const HistoricalMarket& hm) const
+void RiskManager::updateRiskInputs(const int num_snaps)
 {
-    const int num_days = 20; // number of historical days to look at for returns
-
-    // get vector of historical equities (and associated tickers)
-    const std::pair < std::vector <std::string>, std::vector <HistoricalEquity> > heq_pair = hm.getHistoriesVector();
-
-    const std::vector <std::string> tickers = heq_pair.first;
-    const std::vector <HistoricalEquity> heq_vec = heq_pair.second;
     
-    const std::vector < std::vector <double> > returns_matrix = compute_log_return_matrix(heq_vec, num_days);
+    Eigen::MatrixXd returns = computeReturnsMatrix(num_snaps);
 
-    const std::vector < std::vector <double> > cov_matrix = compute_covariance_matrix(returns_matrix);
+    expected_returns = computeExpectedReturns(returns);
+    var_returns = computeVarianceReturns(returns).array().sqrt();
 
-    const std::vector weights = compute_portfolio_weights(p, hm, tickers);
-
-    return compute_portfolio_std_dev(cov_matrix, weights);
+    cov_mat = computeCovarianceMatrix(returns);
+    w_vec = computePortfolioWeights();
+    // portfolio_variance = computePortfolioVariance(cov_mat, w_vec);
 }
 
-double RiskManager::compute_equity_risk(const std::string& ticker, const HistoricalMarket& hm) const 
+void RiskManager::updateRisk() 
 {
-    return compute_equity_risk(hm.getHistory(ticker));
+    portfolio_variance = computePortfolioVariance(cov_mat, w_vec);
 }
 
-double RiskManager::compute_equity_risk(const HistoricalEquity& heq) const 
+double RiskManager::computePortfolioVariance(const Eigen::MatrixXd& cov_matrix, Eigen::VectorXd& weights) const
 {
-    int num_days = 20; // number of days used for close to close volatility
-    std::vector<EquitySnapshot> snaps = heq.getDailySnapshots();
+    return weights.transpose() * cov_matrix * weights;
+}
 
-    if( snaps.size() < num_days + 1) // must account for i-1 for log returns
-        return -1;
+Eigen::VectorXd RiskManager::getEquityPrices() const
+{
+    int num_equities = getNumEquities();
+    Eigen::VectorXd equity_prices(num_equities);
 
-    std::vector <double> log_returns = daily_log_returns(heq, num_days);
+    for( int i = 0; i < num_equities; i++ )
+        equity_prices(i) = hm.getHistory(tickers[i]).getLastTradePrice();
 
-    double mean_returns = std::accumulate(log_returns.begin(), log_returns.end(), 0) / num_days;
+    return equity_prices;
+}
 
-    double diff_squared = 0;
+Eigen::VectorXi RiskManager::computeMaximumAllowableBasketSize(const Eigen::VectorXd& trade_quantities, const int num_snaps) const
+{
 
-    // compute standard deviation of log_returns
-    for( int i = 0; i < num_days; i++)
+    const Eigen::VectorXd unit_trade_quantities = trade_quantities/trade_quantities.sum();
+
+    // data to get vector of cash value per equity
+    Eigen::VectorXd weights = getPortfolioWeights();
+    double value = getPortfolioEquityValue();
+
+    // used for computing portfolio risk of new positions
+    Eigen::VectorXd values = weights*value; 
+
+    // used for computing the price of baskets
+    Eigen::VectorXd equity_prices = getEquityPrices();
+
+    // compute the maximum number of baskets parchasable by cash (portfolio) and trade value (risk) limitations
+    double price_per_basket = unit_trade_quantities.dot(equity_prices); 
+
+    // largest number of shares purchasable with amount of cash available
+    double limiting_shares_cash = p.getCash() / price_per_basket;
+
+    // largest cost associated with purchasing basket amounts 
+    double largest_cost = (unit_trade_quantities.array() * equity_prices.array()).maxCoeff();
+
+    // largest number of baskets purchasable with maximum trade value (from risk manager)
+    double limiting_shares_trade_value = getMaxValuePerTrade() / largest_cost;
+
+    // largest purchasable shares are the minimum of 2 limits
+    double maximum_allowable_shares = std::min(limiting_shares_cash, limiting_shares_trade_value);
+
+    double risk = getMaxAllowableRisk() + 1; // +1 to guaruntee loop entrance
+    int num_baskets = maximum_allowable_shares + 1; // +1 since loop starts with subtracting 1
+
+    Eigen::VectorXd rounded_basket(getNumEquities());
+    Eigen::VectorXd simulated_portfolio_values = values;
+
+    // start with largest number of purchasable baskets
+    // subtract until the risk constraints are satisfied or the number of baskets is 0
+    for(int i = int(maximum_allowable_shares); risk > getMaxAllowableRisk() && i > 0; i--)
     {
-        diff_squared += (mean_returns - log_returns[i]) * (mean_returns - log_returns[i]);
+        rounded_basket = (i * unit_trade_quantities).array().floor(); // floor round to ensure price remains below cash
+
+        simulated_portfolio_values = values + rounded_basket; // simulate portfolio weights with basket purchased
+
+        weights = simulated_portfolio_values/simulated_portfolio_values.sum(); // weights is unit portfolio cash values
+
+        risk = std::sqrt( computePortfolioVariance(getCovarianceMatrix(), weights) );
     }
 
-    return std::sqrt(diff_squared / (num_days - 1));
+
+    return rounded_basket.cast<int>();
+    
 }
 
-double RiskManager::trueRange(double high, double low, double prev_close) const
+std::pair <double, double> RiskManager::computeStopLossTakeProfit(const std::string& ticker, const double price, const double stop_loss_coeff, const double take_profit_coeff) const
 {
-    return std::max(high - low,
-                    std::max(std::abs(high - prev_close),
-                             std::abs(low - prev_close))
-                    );
-}
+    int index = getIndexOfTicker(ticker);
 
-double RiskManager::averageTrueRange(std::vector<EquitySnapshot> daily_hist, int num_days) const
-{
-    int num_tr = 0;
-    double total_tr = 0;
+    double std_dev = std::sqrt(getVarReturns()[index]) * price;
 
-    for( int i = 0; i < daily_hist.size(); i++ )
-        total_tr += trueRange(daily_hist[i].getHigh(), daily_hist[i].getLow(), daily_hist[i].getLast());
+    double stop_loss = price - stop_loss_coeff * std_dev;
 
-    return total_tr / num_days;
-}
+    double take_profit = price + take_profit_coeff * std_dev;
 
-std::pair<double, double> RiskManager::computeStops(double entry_price, double atr, bool is_long_pos) const
-{
-
-    double stop_loss, take_profit;
-
-    if( is_long_pos )
-    {
-        stop_loss = entry_price - getKSL() * atr;
-        take_profit = entry_price + getKTP() * atr;
-    }
-
-    else // short position
-    {
-        stop_loss = entry_price + getKSL() * atr;
-        take_profit = entry_price - getKTP() * atr;       
-    }
-
-    return std::make_pair(stop_loss, take_profit);
-}
-
-int RiskManager::maxPositionSize(double portfolio_value, 
-                                 double entry_price,
-                                 HistoricalEquity& hist,
-                                 int num_days) const
-{
-
-    std::vector<EquitySnapshot> daily_hist = hist.getDailySnapshots();
-
-    // do not allow trades if there is insufficient historical data
-    if( daily_hist.size() < num_days )
-        return 0;
-
-    double max_risk = portfolio_value * max_risk_per_trade;
-
-    double ATR = 0;
-
-    return 0;
+    return {stop_loss, take_profit};
 }
 
 } // namespace AlgoTrading

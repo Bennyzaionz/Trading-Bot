@@ -10,4 +10,6 @@ add_subdirectory(strategy)
 add_subdirectory(trading)
 add_subdirectory(risk)
 
+target_link_libraries(${LIBRARY_NAME} PUBLIC Eigen3::Eigen)
+
 target_include_directories(${LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)

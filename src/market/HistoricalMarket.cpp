@@ -100,16 +100,6 @@ void HistoricalMarket::addEquity(const std::string& ticker, const bool verbose)
 
 }
 
-// void HistoricalMarket::appendDataTo(const std::string& ticker, const EquitySnapshot& eq)
-// {
-//     int index = containsTicker(ticker);
-
-//     if( index == DOES_NOT_CONTAIN )
-//         throw std::runtime_error("Ticker not found in Historical Market");
-
-//     hist_equities[index].append_data(eq);
-// }
-
 void HistoricalMarket::appendData(const LiveEquity& leq)
 {
     // int index = containsTicker(leq.getTicker());
@@ -132,6 +122,63 @@ void HistoricalMarket::appendData(const LiveEquity& leq)
     it->second.appendData(leq);
 }
 
+DateTime HistoricalMarket::getLatestDateTime(const std::string& ticker) const
+{
+    if( isEmpty() )
+        throw std::runtime_error("Cannot get latest datetime of empty market");
+
+    return getHistory(ticker).getMostRecentDateTime();
+}
+
+double HistoricalMarket::getLatestBid(const std::string& ticker) const
+{
+    if( isEmpty() )
+        throw std::runtime_error("Cannot get latest data of empty market");
+
+    return getHistory(ticker).getLatestBid();
+}
+double HistoricalMarket::getLatestAsk(const std::string& ticker) const
+{
+    if( isEmpty() )
+        throw std::runtime_error("Cannot get latest data of empty market");
+
+    return getHistory(ticker).getLatestAsk();
+}
+double HistoricalMarket::getLatestLast(const std::string& ticker) const
+{
+    if( isEmpty() )
+        throw std::runtime_error("Cannot get latest data of empty market");
+
+    return getHistory(ticker).getLatestLast();
+}
+double HistoricalMarket::getLatestOpen(const std::string& ticker) const
+{
+    if( isEmpty() )
+        throw std::runtime_error("Cannot get latest data of empty market");
+
+    return getHistory(ticker).getLatestOpen();
+}
+double HistoricalMarket::getLatestClose(const std::string& ticker) const
+{
+    if( isEmpty() )
+        throw std::runtime_error("Cannot get latest data of empty market");
+
+    return getHistory(ticker).getLatestClose();
+}
+double HistoricalMarket::getLatestHigh(const std::string& ticker) const
+{
+    if( isEmpty() )
+        throw std::runtime_error("Cannot get latest data of empty market");
+
+    return getHistory(ticker).getLatestHigh();
+}
+double HistoricalMarket::getLatestLow(const std::string& ticker) const
+{
+    if( isEmpty() )
+        throw std::runtime_error("Cannot get latest data of empty market");
+
+    return getHistory(ticker).getLatestLow();
+}
 
 void HistoricalMarket::print(const PrintType print_type) const
 {

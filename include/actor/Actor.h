@@ -3,7 +3,7 @@
 
 #include "trading/Portfolio.h"
 #include "strategy/Strategy.h"
-#include "risk/RiskManager.h"
+// #include "risk/RiskManager.h"
 #include "market/HistoricalMarket.h"
 
 namespace AlgoTrading

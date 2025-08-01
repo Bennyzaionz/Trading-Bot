@@ -3,13 +3,13 @@
 #include <unordered_set>
 
 #include "trading/Portfolio.h"
+#include "risk/RiskManager.h" // important to include due to forward decleration of risk manager class in Portfolio.h
 
 namespace AlgoTrading
 {
 
-Portfolio::Portfolio(const double cash_):
-    cash(cash_), 
-    pos{} {}
+Portfolio::Portfolio(const HistoricalMarket& hm_, const double cash_):
+    cash(cash_), hm(hm_), pos{}, orders{} {}
 
 double Portfolio::getCommission(int quantity) const
 {
@@ -21,19 +21,10 @@ double Portfolio::getCommission(int quantity) const
     return commission;
 }
 
-void Portfolio::addNewPosition(const std::shared_ptr<LiveEquity> leq, 
-                               const int num_shares,
-                               const double purchase_price,
-                               const double stop_loss,
-                               const double take_profit,
-                               const DateTime& open_dt)
+void Portfolio::addNewPosition(const std::string& ticker, const int num_shares, const double purchase_price, const RiskManager& rm)
 {
-    /*
-    IMPORTANT: does not check validity of ticker_, only call in TwsApi callback to ensure ticker_ exists
-    */
-
-    OpenPosition new_pos(leq, num_shares, purchase_price, stop_loss, take_profit, open_dt);
-
+    std::pair <double, double> stops = rm.computeStopLossTakeProfit(ticker, purchase_price); // (stop loss, take profit)
+    OpenPosition new_pos(ticker, num_shares, purchase_price, stops.first, stops.second, hm.getLatestDateTime(ticker));
     pos.push_back(new_pos);
 }
 
@@ -69,18 +60,6 @@ std::vector <std::string> Portfolio::getUniqueHoldings() const
     return std::vector <std::string> (unique_set.begin(), unique_set.end());
 }
 
-std::vector<LiveEquity> Portfolio::getLiveEquities() const
-{
-    std::vector<LiveEquity> leqs;
-
-    std::vector<OpenPosition> positions = getOpenPositions();
-
-    for( int i = 0; i < getNumPositions(); i++ )
-        leqs.push_back(positions[i].getLiveEquity());
-
-    return leqs;
-}
-
 std::vector<int> Portfolio::getNumShares() const
 {
     std::vector<int> num_shares;
@@ -93,12 +72,25 @@ std::vector<int> Portfolio::getNumShares() const
     return num_shares;
 }
 
+// cash value of all open positions (excludes cash)
+double Portfolio::getCashValue() const
+{
+    double value = getCash();
+
+    for( int i = 0; i < getNumPositions(); i++ )
+    {
+        value += hm.getLatestLast(pos[i].getTicker()); //pos[i].getCashValue();
+    }
+
+    return value;
+}
+
 double Portfolio::getValue() const
 {
     double value = getCash();
 
     for( int i = 0; i < getNumPositions(); i++ )
-        value += pos[i].getMarketValue();
+        value += hm.getLatestLast(pos[i].getTicker());
     
     return value;
 }
@@ -127,8 +119,7 @@ void Portfolio::print(const PrintType print_type) const
     
     for( int i = 0; i < getNumPositions(); i++)
     {
-        pos[i].getLiveEquity().print(print_type);
-        std::cout << ", Shares: " << pos[i].getShares() << std::endl;
+        pos[i].print();
     }
 
     std::cout << "-------------------------------" << std::endl << std::endl;
@@ -185,36 +176,20 @@ int Portfolio::getNumSharesOf(const std::string& ticker) const
     return num_shares;
 }
 
-TradeStatus Portfolio::buyEquity(const std::shared_ptr<LiveEquity> leq,
-                                 const int num_shares_buy, 
-                                 const double price, 
-                                 const double stop_loss,
-                                 const double take_profit,
-                                 const DateTime& dt,
-                                 const bool verbose)
+TradeStatus Portfolio::buyEquity(const std::string& ticker, const int num_shares_buy, const double purchase_price, const RiskManager& rm, const bool verbose)
 {
-    std::string ticker = leq -> getTicker();
-    /*
-    Conditions to buy:
-    - must have enough money
-    - ticker must exist (might check this when I call it in eclient and historical data)
+    /* 
+    Conditions to buy: 
+        - enough money
+        - ticker must exist in historical market
     */
 
-    if( leq == nullptr )
-    {
-        if ( verbose )
-        {
-            std::cout << "---------- Order Details ----------" << std::endl;
-            std::cout << "Specified equity is not tracked in Live Market" << std::endl;
-            std::cout << "--------------------------------------" << std::endl;
-        }
-
-        return TradeStatus::TICKER_NOT_TRACKED;
-    }
+    if( !hm.containsTicker(ticker) )
+        throw std::runtime_error("Cannot buy equity since it does not exist in the market");
 
     double commission = getCommission(num_shares_buy);
 
-    double cost = num_shares_buy * price + commission;
+    double cost = num_shares_buy * purchase_price + commission;
 
     if ( cash <= cost )
     {
@@ -230,15 +205,17 @@ TradeStatus Portfolio::buyEquity(const std::shared_ptr<LiveEquity> leq,
 
     cash -= cost; // pay for stock + commission
 
-    addNewPosition(leq, num_shares_buy, price, stop_loss, take_profit, dt);
+    std::pair <double, double> stops = rm.computeStopLossTakeProfit(ticker, purchase_price); // (stop loss, take profit)
+
+    addNewPosition(ticker, num_shares_buy, purchase_price, rm);
 
     if( verbose )
     {
         std::cout << "---------- Purchase Details ----------" << std::endl;
         std::cout << "Ticker: " << ticker 
                   << ", Number of Shares: " << num_shares_buy
-                  << ", Price Per Share: " << price
-                  << ", Gross Cost: " << (num_shares_buy * price) 
+                  << ", Price Per Share: " << purchase_price
+                  << ", Gross Cost: " << (num_shares_buy * purchase_price) 
                   << ", Commission: " << commission 
                   << ", Total Cost: " << cost << std::endl;
         std::cout << "--------------------------------------" << std::endl;
@@ -340,7 +317,7 @@ TradeStatus Portfolio::attemptSellNumShares(const std::string& ticker,
         }
     }  
     
-    if( shares_sold == num_shares_attempt_sell)
+    if( shares_sold == num_shares_attempt_sell )
     {
         return TradeStatus::SUCCESSFUL_TRADE;
     }
@@ -351,67 +328,91 @@ TradeStatus Portfolio::attemptSellNumShares(const std::string& ticker,
     return TradeStatus::ERROR;
 }
 
-TradeStatus Portfolio::marketOrder(const OrderType order_type,
-                                   const std::shared_ptr<LiveEquity> leq, 
-                                   const int num_shares,
-                                   const bool verbose)
+TradeStatus Portfolio::marketOrder(const OrderType order_type, const std::string& ticker, const int num_shares, const RiskManager& rm, const bool verbose)
 {
-    std::string ticker = leq -> getTicker();
+    if( num_shares == 0 )
+        return TradeStatus::ERROR;
 
-    if( verbose )
+    if( !hm.containsTicker(ticker) )
+        throw std::runtime_error("Market order cannot be placed becuase ticker does not exist in market");
+    
+        if( verbose )
         std::cout << std::endl << "Market Order: " << std::endl;
 
     if( order_type == OrderType::BUY )
     {
-        double buy_price = leq -> getAsk();
-        double stop_loss = buy_price - 10;
-        double take_profit = buy_price + 10;
-        DateTime& dt = leq -> getDatetime();
-        return buyEquity(leq, num_shares, buy_price, stop_loss, take_profit, dt, verbose);
+        double buy_price = hm.getLatestAsk(ticker); // leq -> getAsk();
+        return buyEquity(ticker, num_shares, buy_price, rm, verbose);
     }
 
     else if( order_type == OrderType::SELL)
     {
         int index = ContainsOpenOrderWithTicker(ticker);
-        double sell_price = leq -> getBid();
+        double sell_price = hm.getLatestBid(ticker);
         return sellEquity(index, num_shares, sell_price, verbose);
     }
 
     return TradeStatus::ERROR;
 }
 
-TradeStatus Portfolio::marketOrder(const OrderType order_type,
-                                   const std::string ticker,
-                                   const LiveMarket& lm, 
-                                   const int num_shares,
-                                   const bool verbose)
+TradeStatus Portfolio::marketOrder(const std::string& ticker, const int num_shares, const RiskManager& rm, const bool verbose)
 {
 
-    std::shared_ptr<LiveEquity> leq = lm.getEquity(ticker);
+    if( !hm.containsTicker(ticker) )
+        throw std::runtime_error("Market order cannot be placed becuase ticker does not exist in market");
 
-    if( leq == nullptr )
+    if( num_shares == 0 )
+        throw std::runtime_error("Cannot place an order for 0 shares");
+    
+    if( verbose )
+    std::cout << std::endl << "Market Order: " << std::endl;
+
+    // order is a buy
+    // close short positions before adding long positions
+    if( num_shares > 0 )
     {
-        if ( verbose )
-        {
-            std::cout << std::endl << "Market Order: " << std::endl;
-            std::cout << "---------- Purchase Details ----------" << std::endl;
-            std::cout << "Specified ticker " << ticker << " is not tracked in Live Market" << std::endl;
-            std::cout << "--------------------------------------" << std::endl;
-        }
-
-        return TradeStatus::TICKER_NOT_TRACKED;
+        double buy_price = hm.getLatestAsk(ticker); // leq -> getAsk();
+        return buyEquity(ticker, num_shares, buy_price, rm, verbose);
     }
-        
-    return marketOrder(order_type, leq, num_shares, verbose);
 
+    // order is a sell
+    // close long positions before adding short positions
+    else if( num_shares < 0)
+    {
+        int num_shares_held = getNumSharesOf(ticker);
+        int index = ContainsOpenOrderWithTicker(ticker);
+        double sell_price = hm.getLatestBid(ticker);
+        return sellEquity(index, num_shares, sell_price, verbose);
+    }
+
+    return TradeStatus::ERROR;
 }
-TradeStatus Portfolio::limitOrder(const OrderType order_type,
-                                  const std::string&ticker,
-                                  const int num_shares,
-                                  const int desired_price,
-                                  const DateTime& dt,
-                                  const DateTime& exp,
-                                  const bool verbose)
+
+TradeStatus Portfolio::basketMarketOrder(const std::vector <std::pair <std::string, int> >& basket, const RiskManager& rm, const bool verbose)
+{
+    OrderType order_type;
+    int num_shares;
+    std::string ticker;
+    
+    TradeStatus status;
+    TradeStatus basket_status = TradeStatus::SUCCESSFUL_TRADE;
+
+    for( int i = 0; i < basket.size(); ++i )
+    {
+        ticker = basket[i].first;
+        num_shares = basket[i].second;
+        order_type = (num_shares > 0) ? OrderType::BUY : OrderType::SELL;
+
+        status = marketOrder(ticker, std::abs(num_shares), rm, verbose);
+
+        if( status != TradeStatus::SUCCESSFUL_TRADE )
+            basket_status = TradeStatus::ERROR;
+    }
+
+    return basket_status;
+}
+
+TradeStatus Portfolio::limitOrder(const OrderType order_type, const std::string& ticker, const int num_shares, const int desired_price, const DateTime& dt_order_placed, const DateTime& dt_exp, const bool verbose)
 {
     // check buy conditions:
     // - enough money
@@ -442,7 +443,7 @@ TradeStatus Portfolio::limitOrder(const OrderType order_type,
     }
 
 
-    LimitOrder order(ticker, order_type, desired_price, num_shares, dt, exp);
+    LimitOrder order(ticker, order_type, desired_price, num_shares, dt_order_placed, dt_exp);
     
     orders.push_back(order);
     if( verbose )
@@ -454,60 +455,12 @@ TradeStatus Portfolio::limitOrder(const OrderType order_type,
                   << ", Ticker: " << ticker
                   << ", Number of Shares: " << num_shares
                   << ", Limit Price: " << desired_price
-                  << ", Placed at: " << dt.toString()
-                  << ", Expires at: " << exp.toString()
+                  << ", Placed at: " << dt_order_placed.toString()
+                  << ", Expires at: " << dt_exp.toString()
                   << "\n---------------------------------\n";
     }
 
     return TradeStatus::SUCCESSFUL_TRADE;
-}
-
-TradeStatus Portfolio::limitOrder(const OrderType order_type,
-                                  const LiveEquity& leq,
-                                  const int num_shares,
-                                  const int desired_price,
-                                  const DateTime& dt_placed,
-                                  const DateTime& exp,
-                                  const bool verbose)
-{
-    const std::string ticker = leq.getTicker();
-
-    // check buy conditions:
-    // - enough money
-    if( order_type == OrderType::BUY && cash < num_shares * desired_price)
-        return TradeStatus::INSUFFICIENT_FUNDS;
-
-    // check sell conditions:
-    // - enough shares
-    else if( order_type == OrderType::SELL && getNumSharesOf(ticker) < num_shares )
-        return TradeStatus::INSUFFICIENT_SHARES;
-
-    LimitOrder order(ticker, order_type, desired_price, num_shares, dt_placed, exp);
-    
-    orders.push_back(order);
-
-    return TradeStatus::SUCCESSFUL_TRADE;
-}
-
-UpdateType Portfolio::updateLiveEquity(const std::string& ticker,
-                                       const double open_,
-                                       const double close_,
-                                       const double last_,
-                                       const double low_,
-                                       const double high_,
-                                       const double bid_,
-                                       const double ask_,
-                                       const int volume_,
-                                       const DateTime& dt_)
-{
-    int index = ContainsOpenOrderWithTicker(ticker);
-
-    if( index == DOES_NOT_CONTAIN )
-        return UpdateType::TICKER_NOT_IN_PORTFOLIO;
-
-    pos[index].updateLiveEquity(open_, close_, last_, low_, high_, bid_, ask_, volume_, dt_);
-
-    return UpdateType::SUCCESSFUL_UPDATE;
 }
 
 void Portfolio::removeLimitOrder(const int index)
@@ -577,7 +530,7 @@ double Portfolio::getFillPrice(const OrderType order_type,
     return fill_price;
 }
 
-void Portfolio::executeLimitOrders(const LiveMarket& lm, const bool verbose)
+void Portfolio::executeLimitOrders(const LiveMarket& lm, const RiskManager& rm, const bool verbose)
 {
     /*
     execute buy orders if:
@@ -633,13 +586,7 @@ void Portfolio::executeLimitOrders(const LiveMarket& lm, const bool verbose)
         if( orders[i].getType() == OrderType::BUY && order_price >= live_low ) // buy && price below order price
         {
 
-            buyEquity(lm.getEquity(ticker), 
-                    volume,
-                    fill_price,
-                    100, // stop loss
-                    100, // take profit
-                    live_snap.getDateTime(), 
-                    verbose);
+            buyEquity(ticker, volume, fill_price, rm, verbose);
 
             removeLimitOrder(i);
         }
@@ -658,7 +605,7 @@ void Portfolio::executeLimitOrders(const LiveMarket& lm, const bool verbose)
     }
 }
 
-void Portfolio::executeStopLossTakeProfit(const bool is_live, const LiveMarket&lm, const bool verbose)
+void Portfolio::executeStopLossTakeProfit(const bool is_live, const LiveMarket&lm, const RiskManager& rm, const bool verbose)
 {
     std::vector<OpenPosition> positions = getOpenPositions();
 
@@ -671,7 +618,7 @@ void Portfolio::executeStopLossTakeProfit(const bool is_live, const LiveMarket&l
     if( is_live )
     {
         double live_ask, live_bid;
-        for( int i = getNumPositions() - 1; i >= 0; i--)
+        for( int i = getNumPositions() - 1; i >= 0; i-- )
         {
             ticker = positions[i].getTicker();
             live_ask = lm.getEquity(ticker) -> getAsk();
@@ -681,9 +628,9 @@ void Portfolio::executeStopLossTakeProfit(const bool is_live, const LiveMarket&l
             num_shares = positions[i].getShares();
             // stop loss
 
-            if( live_bid < stop_loss || live_ask > take_profit)
+            if( live_bid < stop_loss || live_ask > take_profit )
             {
-                marketOrder(OrderType::SELL, lm.getEquity(ticker), num_shares, verbose);
+                marketOrder(OrderType::SELL, ticker, num_shares, rm, verbose);
             }
         }
     }
@@ -691,7 +638,7 @@ void Portfolio::executeStopLossTakeProfit(const bool is_live, const LiveMarket&l
     else
     {
         double live_low, live_high;
-        for( int i = getNumPositions() - 1; i >= 0; i--)
+        for( int i = getNumPositions() - 1; i >= 0; i-- )
         {
             ticker = positions[i].getTicker();
             live_low = lm.getEquity(ticker) -> getLow();

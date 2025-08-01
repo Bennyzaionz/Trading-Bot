@@ -8,7 +8,8 @@
 		"C:/Algorithmic_Trading/build/src/market/cmake_install.cmake",
 		"C:/Algorithmic_Trading/build/src/strategy/cmake_install.cmake",
 		"C:/Algorithmic_Trading/build/src/trading/cmake_install.cmake",
-		"C:/Algorithmic_Trading/build/src/risk/cmake_install.cmake"
+		"C:/Algorithmic_Trading/build/src/risk/cmake_install.cmake",
+		"C:/Algorithmic_Trading/build/external/cmake_install.cmake"
 	],
 	"Parallel" : false
 }

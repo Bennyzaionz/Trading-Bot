@@ -11,6 +11,9 @@ set(LIBRARY_NAME algo_trading)
 # goes to src/CMakeLists.txt
 add_subdirectory(src)
 
+# goes to external/CmakeLists.txt
+add_subdirectory(external)
+
 # create executable file
 add_executable(${PARENT_TARGET} test/test.cpp)
 

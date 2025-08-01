@@ -9,7 +9,8 @@ namespace AlgoTrading {
 class OpenPosition {
 
     private:
-        std::shared_ptr<LiveEquity> live_equity;
+        // std::shared_ptr<LiveEquity> live_equity;
+        std::string ticker;
         int shares;
         double entry_price;
         double stop_loss;
@@ -19,12 +20,12 @@ class OpenPosition {
     public:
 
         /*---------- CONSTRUCTOR ----------*/
-        OpenPosition(const std::shared_ptr<LiveEquity>& live_equity_,
-                    int shares_,
-                    double entry_price_,
-                    double stop_loss_,
-                    double take_profit_,
-                    const DateTime& open_dt_);
+        // OpenPosition(const std::shared_ptr<LiveEquity>& live_equity_,
+        //             int shares_,
+        //             double entry_price_,
+        //             double stop_loss_,
+        //             double take_profit_,
+        //             const DateTime& open_dt_);
 
         OpenPosition(const std::string& ticker_,
                     int shares_,
@@ -35,14 +36,16 @@ class OpenPosition {
 
         /*---------- GETTERS ----------*/
 
-        const LiveEquity& getLiveEquity() const { return *live_equity; }
+        // const LiveEquity& getLiveEquity() const { return *live_equity; }
+        const std::string& getTicker() const { return ticker; }
         int getShares() const { return shares; }
         double getEntryPrice() const { return entry_price; }
         double getStopLoss() const { return stop_loss; }
         double getTakeProfit() const { return take_profit; }
-        double getMarketValue() const { return shares * getLiveEquity().getMarketValue(); }
+        // double getMarketValue() const { return shares * getLiveEquity().getMarketValue(); }
+        // double getCashValue() const { return shares * getLiveEquity().getLast(); }
         DateTime getOpenDT() const { return open_dt; }
-        std::string getTicker() const { return getLiveEquity().getTicker(); }
+        // std::string getTicker() const { return getLiveEquity().getTicker(); }
 
         /*---------- SETTERS ----------*/
 
@@ -53,15 +56,15 @@ class OpenPosition {
 
         /*---------- UPDATE LIVE DATA ----------*/
 
-        void updateLiveEquity(const double open_,
-                              const double close_,
-                              const double last_,
-                              const double low_,
-                              const double high_,
-                              const double bid_,
-                              const double ask_,
-                              const int volume_,
-                              const DateTime& dt_);
+        // void updateLiveEquity(const double open_,
+        //                       const double close_,
+        //                       const double last_,
+        //                       const double low_,
+        //                       const double high_,
+        //                       const double bid_,
+        //                       const double ask_,
+        //                       const int volume_,
+        //                       const DateTime& dt_);
 
         /*---------- CHANGING NUMBER OF SHARES ----------*/
 
@@ -69,8 +72,8 @@ class OpenPosition {
 
         /*---------- STOP LOSS ----------*/
 
-        bool hitStopLoss() const;
-        bool hitTakeProfit() const;
+        // bool hitStopLoss() const;
+        // bool hitTakeProfit() const;
 
         /*---------- PRINT HELPER ----------*/
 

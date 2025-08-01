@@ -15,11 +15,11 @@ void HistoricalActor::onTick(const DateTime& dt, const LiveMarket& lm)
 
     bool verbose = true;
 
-    portfolio.executeStopLossTakeProfit(false, lm, verbose);
+    portfolio.executeStopLossTakeProfit(false, lm, *riskManager, verbose);
 
     portfolio.deleteExpiredLimitOrders(dt, verbose);
 
-    portfolio.executeLimitOrders(lm, verbose);
+    portfolio.executeLimitOrders(lm, *riskManager, verbose);
 
     
 }

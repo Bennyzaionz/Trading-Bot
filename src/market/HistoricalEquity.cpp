@@ -166,11 +166,62 @@ DateTime HistoricalEquity::getMostRecentDateTime() const
 {
     std::vector<DateTime> dts = getDatetimes();
 
-    if (dts.empty()) {
+    if( dts.empty() ) 
         throw std::runtime_error("No datetimes available");
-    }
-    return dts.back();
+    
+        return dts.back();
 }
+
+double HistoricalEquity::getLatestBid() const
+{
+    std::vector <EquitySnapshot> snaps = getData();
+    if( snaps.empty() )
+        throw std::runtime_error("No historical snapshots available ");
+    return snaps.back().getBid();
+}
+double HistoricalEquity::getLatestAsk() const
+{
+    std::vector <EquitySnapshot> snaps = getData();
+    if( snaps.empty() )
+        throw std::runtime_error("No historical snapshots available ");
+    return snaps.back().getAsk();
+}
+double HistoricalEquity::getLatestLast() const
+{
+    std::vector <EquitySnapshot> snaps = getData();
+    if( snaps.empty() )
+        throw std::runtime_error("No historical snapshots available ");
+    return snaps.back().getLast();
+}
+double HistoricalEquity::getLatestOpen() const
+{
+    std::vector <EquitySnapshot> snaps = getData();
+    if( snaps.empty() )
+        throw std::runtime_error("No historical snapshots available ");
+    return snaps.back().getOpen();
+}
+double HistoricalEquity::getLatestClose() const
+{
+    std::vector <EquitySnapshot> snaps = getData();
+    if( snaps.empty() )
+        throw std::runtime_error("No historical snapshots available ");
+    return snaps.back().getClose();
+}
+double HistoricalEquity::getLatestHigh() const
+{
+    std::vector <EquitySnapshot> snaps = getData();
+    if( snaps.empty() )
+        throw std::runtime_error("No historical snapshots available ");
+    return snaps.back().getHigh();
+}
+double HistoricalEquity::getLatestLow() const
+{
+    std::vector <EquitySnapshot> snaps = getData();
+    if( snaps.empty() )
+        throw std::runtime_error("No historical snapshots available ");
+    return snaps.back().getLow();
+}
+
 
 
 /*---------- PRINTER HELPER ---------*/
@@ -286,7 +337,7 @@ void HistoricalEquity::simulateData(int num_days,
         appendData(leq);
 
         price = close;
-        current_date = current_date + 86400; // add 1 day (in seconds)
+        current_date = current_date + 60*60*24; // add 1 day (in seconds)
     }
 }
 
